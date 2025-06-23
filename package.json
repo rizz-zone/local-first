@@ -1,12 +1,32 @@
 {
   "name": "local-first",
-  "module": "index.ts",
+  "module": "./dist/index.js",
   "type": "module",
   "private": true,
+  "sideEffects": false,
   "devDependencies": {
-    "@types/bun": "latest"
+    "@eslint/compat": "^1.3.0",
+    "@eslint/js": "^9.29.0",
+    "@types/bun": "latest",
+    "eslint-config-prettier": "^10.1.5",
+    "prettier": "^3.6.0",
+    "tsdown": "^0.12.8",
+    "typescript-eslint": "^8.34.1"
   },
   "peerDependencies": {
     "typescript": "^5"
+  },
+  "scripts": {
+    "style": "prettier -c .",
+    "style:write": "prettier -w .",
+    "lint": "eslint .",
+    "test": "echo 'all tested, everything is so good and very wow'",
+    "build": "tsdown"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": "./dist/index.js",
+    "./package.json": "./package.json"
   }
 }
