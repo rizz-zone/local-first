@@ -20,8 +20,10 @@
     "style": "prettier -c .",
     "style:write": "prettier -w .",
     "lint": "eslint .",
-    "test": "echo 'all tested, everything is so good and very wow'",
-    "build": "tsdown"
+    "test": "vitest run",
+    "test:watch": "vitest watch",
+    "build": "tsdown",
+    "dev": "tsdown --watch --no-clean"
   },
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
