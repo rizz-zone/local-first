@@ -6,5 +6,6 @@ export class LocalFirst {
 
 	constructor() {
 		this.machine = createActor(clientMachine)
+		this.machine.start()
 	}
 }
