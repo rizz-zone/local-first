@@ -1,11 +1,15 @@
 import { createActor } from 'xstate'
-import { clientMachine } from './machines/client'
+import { clientMachine } from '../machines/worker'
 
-export class LocalFirst {
+export class WorkerLocalFirst {
 	private machine
 
 	constructor() {
 		this.machine = createActor(clientMachine)
 		this.machine.start()
+	}
+
+	public [Symbol.dispose] = () => {
+		this.machine.stop()
 	}
 }

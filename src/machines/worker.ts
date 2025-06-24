@@ -11,8 +11,12 @@ export const clientMachine = createMachine({
 			initial: 'disconnected',
 			states: {
 				disconnected: {},
-				'will never connect': {},
-				connected: {}
+				'will never connect': {
+					type: 'final'
+				},
+				connected: {
+					type: 'final'
+				}
 			}
 		}
 	}
