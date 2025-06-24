@@ -10,7 +10,8 @@
     "eslint-config-prettier": "^10.1.5",
     "prettier": "^3.6.0",
     "tsdown": "^0.12.8",
-    "typescript-eslint": "^8.34.1"
+    "typescript-eslint": "^8.34.1",
+    "vitest": "^3.2.4"
   },
   "peerDependencies": {
     "typescript": "^5"
@@ -29,5 +30,9 @@
   "exports": {
     ".": "./dist/index.js",
     "./package.json": "./package.json"
+  },
+  "dependencies": {
+    "xstate": "^5.20.0",
+    "zod": "^3.25.67"
   }
 }

@@ -1,10 +1,10 @@
-export function a() {
-	console.log('a')
+import { createActor } from 'xstate'
+import { clientMachine } from './machines/client'
+
+export class LocalFirst {
+	private machine
+
+	constructor() {
+		this.machine = createActor(clientMachine)
+	}
 }
-export function b() {
-	console.log('wer are eonei')
-}
-function c() {
-	console.log('TOP SECRET')
-}
-a()
