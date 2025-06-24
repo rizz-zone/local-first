@@ -3,7 +3,7 @@ import { WorkerLocalFirst } from './worker_thread'
 import type { clientMachine } from '../machines/worker'
 import type { Actor } from 'xstate'
 
-describe('LocalFirst', () => {
+describe('WorkerLocalFirst', () => {
 	it('should initialise with the correct machine state', () => {
 		using localFirst = new WorkerLocalFirst()
 		const machine = (

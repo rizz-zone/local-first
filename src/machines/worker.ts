@@ -20,11 +20,11 @@ export const clientMachine = setup({
 		}),
 		establishDb: assign(() => ({})),
 		initWsUrl: assign(({ event }) => {
-			if (event.type !== 'init') return {}
+			if (event.type !== 'init') /* v8 ignore next */ return {}
 			return { wsUrl: event.wsUrl }
 		}),
 		initDbName: assign(({ event }) => {
-			if (event.type !== 'init') return {}
+			if (event.type !== 'init') /* v8 ignore next */ return {}
 			return { dbName: `${event.dbName}.sqlite` }
 		})
 	}
