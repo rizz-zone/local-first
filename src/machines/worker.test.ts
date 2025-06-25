@@ -87,11 +87,8 @@ describe('worker machine', () => {
 				dbName: 'jerry'
 			})
 
-			await vi.waitFor(
-				() => {
-					if (machine.getSnapshot().value.websocket !== 'connected')
-						throw new Error()
-				},
+			await vi.waitUntil(
+				() => machine.getSnapshot().value.websocket === 'connected',
 				{ timeout: 500, interval: 20 }
 			)
 
