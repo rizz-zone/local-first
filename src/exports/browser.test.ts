@@ -6,7 +6,7 @@ import {
 	UpstreamWorkerMessageType
 } from '../types/messages/worker/UpstreamWorkerMessage'
 import type { TestingTransition } from '../testing/transitions'
-import { TransitionImpact } from '../types/transitions/TransitionImpact'
+import { TransitionImpact } from '../types/transitions/Transition'
 
 describe('BrowserLocalFirst', () => {
 	describe('Worker', () => {

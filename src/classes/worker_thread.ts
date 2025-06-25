@@ -8,6 +8,7 @@ export class WorkerLocalFirst {
 		this.machine = createActor(clientMachine)
 		this.machine.start()
 	}
+	init() {}
 
 	public [Symbol.dispose] = () => {
 		this.machine.stop()

@@ -1,8 +1,8 @@
 /* v8 ignore start */
 
 import z from 'zod/v4'
-import { TransitionImpact } from '../types/transitions/TransitionImpact'
 import { createTransitionSchema } from '../exports/transition_schema'
+import { TransitionImpact } from '../types/transitions/Transition'
 
 const schema = z.discriminatedUnion('action', [
 	z.object({
