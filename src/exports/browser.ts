@@ -1,5 +1,18 @@
-export class BrowserLocalFirst {
-	private worker
+import type { UpstreamWorkerMessage } from '../types/messages/worker/UpstreamWorkerMessage'
+import { UpstreamWorkerMessageType } from '../types/messages/worker/UpstreamWorkerMessageType'
+import type { Transition } from '../types/transitions/Transition'
+
+export class BrowserLocalFirst<TransitionSchema extends Transition> {
+	private worker: Worker | SharedWorker
+	private submitWorkerMessage(
+		message: UpstreamWorkerMessage<TransitionSchema>
+	) {
+		if ('port' in this.worker) {
+			this.worker.port.postMessage(message)
+			return
+		}
+		this.worker.postMessage(message)
+	}
 
 	constructor({
 		dbName,
@@ -8,20 +21,18 @@ export class BrowserLocalFirst {
 	}: {
 		dbName: string
 		wsUrl: string
-		worker?: Worker | SharedWorker
+		worker: Worker | SharedWorker
 	}) {
-		this.worker =
-			(worker ?? 'SharedWorker' in window)
-				? new SharedWorker(
-						new URL('../entrypoints/shared_worker.ts', import.meta.url),
-						{
-							type: 'module'
-						}
-					)
-				: new Worker(new URL('../entrypoints/worker.ts', import.meta.url), {
-						type: 'module'
-					})
-
-		console.log(dbName, wsUrl)
+		this.worker = worker // The user or adapter **must** define this because the way workers are invoked are not standardised
+		this.submitWorkerMessage({
+			type: UpstreamWorkerMessageType.Init,
+			data: { dbName, wsUrl }
+		})
+	}
+	public transition(transition: TransitionSchema) {
+		this.submitWorkerMessage({
+			type: UpstreamWorkerMessageType.Transition,
+			data: transition
+		})
 	}
 }
