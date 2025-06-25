@@ -7,6 +7,7 @@ export default defineConfig({
 			// eslint-disable-next-line @typescript-eslint/no-non-null-assertion
 			exclude: [...configDefaults.coverage.exclude!, '**/*.config.ts']
 		},
-		globals: true
+		globals: true,
+		environment: 'jsdom'
 	}
 })
