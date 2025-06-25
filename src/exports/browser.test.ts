@@ -1,8 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { BrowserLocalFirst } from './browser'
 import { DB_NAME, SOCKET_URL } from '../testing/constants'
-import type { UpstreamWorkerMessage } from '../types/messages/worker/UpstreamWorkerMessage'
-import { UpstreamWorkerMessageType } from '../types/messages/worker/UpstreamWorkerMessageType'
+import {
+	type UpstreamWorkerMessage,
+	UpstreamWorkerMessageType
+} from '../types/messages/worker/UpstreamWorkerMessage'
 import type { TestingTransition } from '../testing/transitions'
 import { TransitionImpact } from '../types/transitions/TransitionImpact'
 

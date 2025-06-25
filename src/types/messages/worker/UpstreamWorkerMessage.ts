@@ -1,4 +1,7 @@
-import type { UpstreamWorkerMessageType } from './UpstreamWorkerMessageType'
+export enum UpstreamWorkerMessageType {
+	Init,
+	Transition
+}
 
 export type UpstreamWorkerMessage<T> =
 	| {

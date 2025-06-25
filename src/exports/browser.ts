@@ -1,5 +1,7 @@
-import type { UpstreamWorkerMessage } from '../types/messages/worker/UpstreamWorkerMessage'
-import { UpstreamWorkerMessageType } from '../types/messages/worker/UpstreamWorkerMessageType'
+import {
+	type UpstreamWorkerMessage,
+	UpstreamWorkerMessageType
+} from '../types/messages/worker/UpstreamWorkerMessage'
 import type { Transition } from '../types/transitions/Transition'
 
 export class BrowserLocalFirst<TransitionSchema extends Transition> {
@@ -23,7 +25,7 @@ export class BrowserLocalFirst<TransitionSchema extends Transition> {
 		wsUrl: string
 		worker: Worker | SharedWorker
 	}) {
-		this.worker = worker // The user or adapter **must** define this because the way workers are invoked are not standardised
+		this.worker = worker // The user or adapter **must** define this because the way workers are invoked is not standardised
 		this.submitWorkerMessage({
 			type: UpstreamWorkerMessageType.Init,
 			data: { dbName, wsUrl }
