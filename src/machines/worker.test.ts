@@ -10,15 +10,18 @@ import {
 } from 'vitest'
 import { clientMachine } from './worker'
 import { createActor } from 'xstate'
-import { ws } from 'msw'
+import { http, ws } from 'msw'
 import { setupServer } from 'msw/node'
 
 const SOCKET_URL = 'wss://sync.example.com/ws'
 const socketEndpoint = ws.link('wss://sync.example.com/ws')
 export const server = setupServer(
 	socketEndpoint.addEventListener('connection', (server) => {
-		console.log('connecting!')
 		server.server.connect()
+	}),
+	// We shouldn't need this but msw complains (without an error) if we don't have it
+	http.get(SOCKET_URL.replace('wss', 'https'), () => {
+		return new Response()
 	})
 )
 
