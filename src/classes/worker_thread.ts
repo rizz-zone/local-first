@@ -1,3 +1,5 @@
+/// <reference lib="webworker" />
+
 import { createActor } from 'xstate'
 import { clientMachine } from '../machines/worker'
 
@@ -8,7 +10,10 @@ export class WorkerLocalFirst {
 		this.machine = createActor(clientMachine)
 		this.machine.start()
 	}
-	init() {}
+
+	init({ wsUrl, dbName }: { wsUrl: string; dbName: string }) {
+		this.machine.send({ type: 'init', wsUrl, dbName })
+	}
 
 	public [Symbol.dispose] = () => {
 		this.machine.stop()

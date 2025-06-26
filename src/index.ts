@@ -1,3 +1,5 @@
 export * from './exports/browser'
 export * from './exports/durable_object'
+export { sharedWorkerEntrypoint } from './exports/shared_worker'
+export * from './exports/worker'
 export type { Transition } from './types/transitions/Transition'
