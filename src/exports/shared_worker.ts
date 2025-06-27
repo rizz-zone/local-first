@@ -1,6 +1,7 @@
 /// <reference lib="webworker" />
 
 import { WorkerLocalFirst } from '../classes/worker_thread'
+import { NoPortsError } from '../errors'
 import type { BrowserFoundationDataPair } from '../types/common/client/BrowserFoundationDataPair'
 import {
 	UpstreamWorkerMessageType,
@@ -15,12 +16,25 @@ export function sharedWorkerEntrypoint<TransitionSchema extends Transition>() {
 	const portMap = new Map<string, MessagePort>()
 	const activeTabsMap = new Map<BrowserFoundationDataPair, number>()
 
-	function handleDisconnect(portId: string) {}
+	function handleDisconnect(
+		portId: string,
+		objectKey: BrowserFoundationDataPair
+	) {
+		portMap.delete(portId)
+		const activeTabs = activeTabsMap.get(objectKey)
+		if (!activeTabs) return
+		if (activeTabs <= 1) {
+			activeTabsMap.delete(objectKey)
+			objectMap.delete(objectKey)
+			return
+		}
+		activeTabsMap.set(objectKey, activeTabs - 1)
+	}
 
 	ctx.onconnect = (event) => {
 		const port = event.ports[0]
 		if (!port)
-			return console.error('onconnect fired, but there is no associated port')
+			throw new NoPortsError('onconnect fired, but there is no associated port')
 
 		const portId = crypto.randomUUID()
 		portMap.set(portId, port)
