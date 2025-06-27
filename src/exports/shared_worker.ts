@@ -13,9 +13,11 @@ const ctx = self as unknown as SharedWorkerGlobalScope
 
 export function sharedWorkerEntrypoint<TransitionSchema extends Transition>() {
 	const objectMap = new Map<string, WorkerLocalFirst>()
+	// TODO: Figure out if I actually need a port map
 	const portMap = new Map<string, MessagePort>()
 	const activeTabsMap = new Map<string, number>()
 
+	// TODO: This will be used in response to things like ping timeouts and errors and stuff
 	function handleDisconnect(
 		portId: string,
 		objectKey: BrowserFoundationDataPair
@@ -39,6 +41,21 @@ export function sharedWorkerEntrypoint<TransitionSchema extends Transition>() {
 
 		const portId = crypto.randomUUID()
 		portMap.set(portId, port)
+
+		let pingTimeout: ReturnType<typeof setTimeout>
+		function resetPingTimeout() {
+			if (pingTimeout) clearTimeout(pingTimeout)
+			pingTimeout = setTimeout(
+				() => {
+					handleDisconnect(portId, objectKey)
+				},
+				// We could use a shorter timeout than 5000, but we want the
+				// user to be able to Cmd / Ctrl + Shift + T without it
+				// taking ages
+				5000
+			)
+		}
+		resetPingTimeout()
 
 		let objectKey: BrowserFoundationDataPair
 
@@ -69,6 +86,8 @@ export function sharedWorkerEntrypoint<TransitionSchema extends Transition>() {
 
 					return
 				}
+				case UpstreamWorkerMessageType.Ping:
+					return resetPingTimeout()
 			}
 		}
 		port.onmessageerror = (e) => {
