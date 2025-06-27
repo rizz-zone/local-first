@@ -12,23 +12,24 @@ import type { Transition } from '../types/transitions/Transition'
 const ctx = self as unknown as SharedWorkerGlobalScope
 
 export function sharedWorkerEntrypoint<TransitionSchema extends Transition>() {
-	const objectMap = new Map<BrowserFoundationDataPair, WorkerLocalFirst>()
+	const objectMap = new Map<string, WorkerLocalFirst>()
 	const portMap = new Map<string, MessagePort>()
-	const activeTabsMap = new Map<BrowserFoundationDataPair, number>()
+	const activeTabsMap = new Map<string, number>()
 
 	function handleDisconnect(
 		portId: string,
 		objectKey: BrowserFoundationDataPair
 	) {
 		portMap.delete(portId)
-		const activeTabs = activeTabsMap.get(objectKey)
+		const objectKeyString = `${objectKey.wsUrl}::${objectKey.dbName}`
+		const activeTabs = activeTabsMap.get(objectKeyString)
 		if (!activeTabs) return
 		if (activeTabs <= 1) {
-			activeTabsMap.delete(objectKey)
-			objectMap.delete(objectKey)
+			activeTabsMap.delete(objectKeyString)
+			objectMap.delete(objectKeyString)
 			return
 		}
-		activeTabsMap.set(objectKey, activeTabs - 1)
+		activeTabsMap.set(objectKeyString, activeTabs - 1)
 	}
 
 	ctx.onconnect = (event) => {
@@ -51,19 +52,20 @@ export function sharedWorkerEntrypoint<TransitionSchema extends Transition>() {
 
 					const { wsUrl, dbName } = message.data
 					objectKey = { wsUrl, dbName }
+					const objectKeyString = `${wsUrl}::${dbName}`
 
-					if (!objectMap.has(objectKey)) {
+					if (!objectMap.has(objectKeyString)) {
 						using newObject = new WorkerLocalFirst()
 						newObject.init(objectKey)
-						objectMap.set(objectKey, newObject)
+						objectMap.set(objectKeyString, newObject)
 					}
 
-					const existingActiveTabs = activeTabsMap.get(objectKey)
+					const existingActiveTabs = activeTabsMap.get(objectKeyString)
 					if (!existingActiveTabs) {
-						activeTabsMap.set(objectKey, 1)
+						activeTabsMap.set(objectKeyString, 1)
 						return
 					}
-					activeTabsMap.set(objectKey, existingActiveTabs + 1)
+					activeTabsMap.set(objectKeyString, existingActiveTabs + 1)
 
 					return
 				}
