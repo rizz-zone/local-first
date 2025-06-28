@@ -1,15 +1,15 @@
 import { vi, beforeEach, describe, expect, it } from 'vitest'
 import { sharedWorkerEntrypoint } from './shared_worker'
-import { NoPortsError } from '../errors'
-import { UpstreamWorkerMessageType } from '../types/messages/worker/UpstreamWorkerMessage'
-import { WorkerLocalFirst } from '../classes/worker_thread'
+import { NoPortsError } from '../../errors'
+import { UpstreamWorkerMessageType } from '../../types/messages/worker/UpstreamWorkerMessage'
+import { WorkerLocalFirst } from '../../classes/worker_thread'
 
 const mockWorkerLocalFirstInstance = {
 	init: vi.fn(),
 	[Symbol.dispose]: vi.fn()
 }
 
-vi.mock('../classes/worker_thread', () => ({
+vi.mock('../../classes/worker_thread', () => ({
 	WorkerLocalFirst: vi.fn(() => mockWorkerLocalFirstInstance)
 }))
 
