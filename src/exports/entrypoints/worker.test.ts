@@ -3,6 +3,8 @@ import { workerEntrypoint } from './worker'
 import { UpstreamWorkerMessageType } from '../../types/messages/worker/UpstreamWorkerMessage'
 import { WorkerLocalFirst } from '../../classes/worker_thread'
 
+const workerScope = globalThis as unknown as DedicatedWorkerGlobalScope
+
 const mockWorkerLocalFirstInstance = {
 	init: vi.fn(),
 	[Symbol.dispose]: vi.fn()
@@ -33,8 +35,8 @@ describe('Worker entrypoint', () => {
 			type: UpstreamWorkerMessageType.Init,
 			data: { wsUrl: 'ws://localhost:8080', dbName: 'test-db' }
 		}
-		if (!onmessage) throw new Error('onmessage is not defined')
-		onmessage(new MessageEvent('message', { data: message }))
+		if (!workerScope.onmessage) throw new Error('onmessage is not defined')
+		workerScope.onmessage(new MessageEvent('message', { data: message }))
 
 		expect(mockedWorkerLocalFirst).toHaveBeenCalledOnce()
 		expect(mockWorkerLocalFirstInstance.init).toHaveBeenCalledWith({
@@ -51,8 +53,8 @@ describe('Worker entrypoint', () => {
 		const message = {
 			type: UpstreamWorkerMessageType.Ping
 		}
-		if (!onmessage) throw new Error('onmessage is not defined')
-		onmessage(new MessageEvent('message', { data: message }))
+		if (!workerScope.onmessage) throw new Error('onmessage is not defined')
+		workerScope.onmessage(new MessageEvent('message', { data: message }))
 
 		expect(consoleErrorSpy).toHaveBeenCalledWith(
 			"main thread tried to ping worker even though it isn't a SharedWorker!"
@@ -68,8 +70,9 @@ describe('Worker entrypoint', () => {
 		const errorEvent = new MessageEvent('messageerror', {
 			data: 'test error'
 		})
-		if (!onmessageerror) throw new Error('onmessageerror is not defined')
-		onmessageerror(errorEvent)
+		if (!workerScope.onmessageerror)
+			throw new Error('onmessageerror is not defined')
+		workerScope.onmessageerror(errorEvent)
 
 		expect(consoleErrorSpy).toHaveBeenCalled()
 		consoleErrorSpy.mockRestore()
