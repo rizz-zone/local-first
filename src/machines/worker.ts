@@ -9,13 +9,16 @@ export const clientMachine = setup({
 		},
 		events: {} as
 			| { type: 'init'; wsUrl: string; dbName: string }
-			| { type: 'connected' }
+			| { type: 'ws connected' }
+			| { type: 'ws connection issue' }
+			| { type: 'db connected' }
+			| { type: 'db cannot connect' }
 	},
 	actions: {
 		establishSocket: assign(({ context, self }) => {
 			if (!context.wsUrl) return {}
 			const socket = new WebSocket(context.wsUrl)
-			socket.onopen = () => self.send({ type: 'connected' })
+			socket.onopen = () => self.send({ type: 'ws connected' })
 			return { socket }
 		}),
 		establishDb: assign(() => ({})),
@@ -34,14 +37,20 @@ export const clientMachine = setup({
 		websocket: {
 			initial: 'disconnected',
 			states: {
-				connected: {},
+				connected: {
+					on: {
+						'ws connection issue': {
+							target: 'disconnected'
+						}
+					}
+				},
 				disconnected: {
 					entry: 'establishSocket',
 					on: {
 						init: {
 							actions: ['initWsUrl', 'establishSocket']
 						},
-						connected: {
+						'ws connected': {
 							target: 'connected'
 						}
 					}
@@ -55,6 +64,12 @@ export const clientMachine = setup({
 					on: {
 						init: {
 							actions: ['initDbName']
+						},
+						'db connected': {
+							target: 'connected'
+						},
+						'db cannot connect': {
+							target: 'will never connect'
 						}
 					}
 				},
