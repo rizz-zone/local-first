@@ -15,7 +15,7 @@ import { setupServer } from 'msw/node'
 
 const SOCKET_URL = 'wss://sync.example.com/ws'
 const socketEndpoint = ws.link('wss://sync.example.com/ws')
-export const server = setupServer(
+const server = setupServer(
 	socketEndpoint.addEventListener('connection', (server) => {
 		server.server.connect()
 	}),

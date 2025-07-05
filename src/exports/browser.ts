@@ -5,7 +5,7 @@ import {
 import type { Transition } from '../types/transitions/Transition'
 
 export class BrowserLocalFirst<TransitionSchema extends Transition> {
-	private worker: Worker | SharedWorker
+	private readonly worker: Worker | SharedWorker
 	private submitWorkerMessage(
 		message: UpstreamWorkerMessage<TransitionSchema>
 	) {

@@ -6,14 +6,14 @@ The project that includes this library needs to create a file for both a `Shared
 import { sharedWorkerEntrypoint } from 'local-first'
 import { transitionHandler } from './handlers'
 
-export sharedWorkerEntrypoint(transitionHandler)
+sharedWorkerEntrypoint(transitionHandler)
 ```
 
 ```ts
 import { workerEntrypoint } from 'local-first'
 import { transitionHandler } from './handlers'
 
-export workerEntrypoint(transitionHandler)
+workerEntrypoint(transitionHandler)
 ```
 
 ## Both entrypoints gatekeep the same thing
@@ -43,4 +43,4 @@ The only job of the entrypoint is to be a thin layer on top of the [`WorkerLocal
    })
    ```
 
-   The bottom syntax is strongly preferred in Vite (and is the only type of syntax that would allow us to prefer `SharedWorker` and fall back to to `Worker` [when we need to on Android Chromium](https://caniuse.com/mdn-api_sharedworker)), but it cannot simply import an entrypoint from an NPM package.
+   The bottom syntax is strongly preferred in Vite (and is the only type of syntax that would allow us to prefer `SharedWorker` and fall back to `Worker` [when we need to on Android Chromium](https://caniuse.com/mdn-api_sharedworker)), but it cannot simply import an entrypoint from an NPM package.
