@@ -3,7 +3,7 @@
   "module": "./dist/index.js",
   "type": "module",
   "version": "0.0.1",
-  "private": true,
+  "private": false,
   "sideEffects": false,
   "devDependencies": {
     "@eslint/compat": "^1.3.0",
