@@ -13,6 +13,24 @@ jobs:
         with:
           bun-version: 'latest' # or "latest", "canary", <sha>
 
+      - name: get package version
+        id: package-version
+        run: |
+          VERSION=$(jq -r '.version' package.json)
+          echo "version=$VERSION" >> "$github_output"
+
+          if [[ "$VERSION" =~ ^0\. ]]; then
+            echo "is_prerelease=true" >> "$github_output"
+          else
+            echo "is_prerelease=false" >> "$github_output"
+          fi
+
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.bun/install/cache
+          key: ${{ runner.os }}-bun-${{ hashFiles('**/bun.lock') }}
+
       - name: Install dependencies
         run: bun i
 
@@ -23,3 +41,12 @@ jobs:
         run: bun publish
         env:
           NPM_CONFIG_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: create release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ steps.package-version.outputs.version }}
+          name: local-first ${{ steps.package-version.outputs.version }}
+          prerelease: ${{ steps.package-version.outputs.is_prerelease }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

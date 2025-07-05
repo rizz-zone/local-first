@@ -2,6 +2,7 @@
   "name": "local-first",
   "module": "./dist/index.js",
   "type": "module",
+  "version": "0.0.1",
   "private": true,
   "sideEffects": false,
   "devDependencies": {
