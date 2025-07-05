@@ -12,9 +12,9 @@ import { clientMachine } from './worker'
 import { createActor } from 'xstate'
 import { http, ws } from 'msw'
 import { setupServer } from 'msw/node'
+import { SOCKET_URL } from '../testing/constants'
 
-const SOCKET_URL = 'wss://sync.example.com/ws'
-const socketEndpoint = ws.link('wss://sync.example.com/ws')
+const socketEndpoint = ws.link(SOCKET_URL)
 const server = setupServer(
 	socketEndpoint.addEventListener('connection', (server) => {
 		server.server.connect()
