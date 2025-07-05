@@ -1,5 +1,7 @@
 name: Quality Check
 run-name: Checking commit by ${{ github.actor }}
+permissions:
+  contents: read
 
 on: [push]
 
