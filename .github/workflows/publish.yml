@@ -50,7 +50,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.package-version.outputs.version }}
-          name: local-first ${{ steps.package-version.outputs.version }}
+          name: ground0 ${{ steps.package-version.outputs.version }}
           prerelease: ${{ steps.package-version.outputs.is_prerelease }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

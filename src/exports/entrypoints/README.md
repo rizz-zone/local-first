@@ -3,14 +3,14 @@
 The project that includes this library needs to create a file for both a `SharedWorker` and a `Worker`. These entrypoints should reduce this to a 3-4 line declaration per file:
 
 ```ts
-import { sharedWorkerEntrypoint } from 'local-first'
+import { sharedWorkerEntrypoint } from 'ground0'
 import { transitionHandler } from './handlers'
 
 sharedWorkerEntrypoint(transitionHandler)
 ```
 
 ```ts
-import { workerEntrypoint } from 'local-first'
+import { workerEntrypoint } from 'ground0'
 import { transitionHandler } from './handlers'
 
 workerEntrypoint(transitionHandler)
