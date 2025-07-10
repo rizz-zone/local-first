@@ -13,6 +13,7 @@ export const clientMachine = setup({
 			| { type: 'ws connection issue' }
 			| { type: 'db connected' }
 			| { type: 'db cannot connect' }
+			| { type: 'leader lock acquired' }
 	},
 	actions: {
 		establishSocket: assign(({ context, self }) => {
@@ -29,7 +30,12 @@ export const clientMachine = setup({
 		initDbName: assign(({ event }) => {
 			if (event.type !== 'init') /* v8 ignore next */ return {}
 			return { dbName: `${event.dbName}.sqlite` }
-		})
+		}),
+		requestLock: ({ self }) =>
+			navigator.locks.request(
+				'leader',
+				() => new Promise(() => self.send({ type: 'leader lock acquired' }))
+			)
 	}
 }).createMachine({
 	type: 'parallel',
@@ -79,6 +85,22 @@ export const clientMachine = setup({
 				connected: {
 					type: 'final'
 				}
+			}
+		},
+		superiority: {
+			initial: 'follower',
+			states: {
+				follower: {
+					on: {
+						'leader lock acquired': {
+							target: 'leader'
+						},
+						init: {
+							actions: ['requestLock']
+						}
+					}
+				},
+				leader: {}
 			}
 		}
 	}

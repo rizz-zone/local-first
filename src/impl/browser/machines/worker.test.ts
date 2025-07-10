@@ -26,6 +26,21 @@ const server = setupServer(
 )
 
 describe('worker machine', () => {
+	let assignedCallback: undefined | (() => unknown)
+	const lockMethod = vi.fn().mockImplementation(
+		(_: string, callback: () => unknown) =>
+			new Promise<void>((resolve) => {
+				assignedCallback = callback
+				resolve()
+			})
+	)
+	beforeAll(() => {
+		// @ts-expect-error navigator.locks doesn't exist in jsdom
+		navigator.locks = {
+			request: lockMethod
+		}
+	})
+
 	it('starts with no connections', () => {
 		const machine = createActor(clientMachine)
 		machine.start()
@@ -33,7 +48,8 @@ describe('worker machine', () => {
 		const snapshot = machine.getSnapshot()
 		expect(snapshot.value).toEqual({
 			websocket: 'disconnected',
-			db: 'disconnected'
+			db: 'disconnected',
+			superiority: 'follower'
 		})
 	})
 
@@ -97,7 +113,69 @@ describe('worker machine', () => {
 
 			expect(machine.getSnapshot().value).toEqual({
 				websocket: 'connected',
-				db: 'disconnected'
+				db: 'disconnected',
+				superiority: 'follower'
+			})
+		})
+	})
+
+	describe('locking', () => {
+		const clear = () => {
+			lockMethod.mockClear()
+			assignedCallback = undefined
+		}
+		beforeAll(clear)
+		afterEach(clear)
+
+		it('does not request a lock before init', () => {
+			const machine = createActor(clientMachine)
+			machine.start()
+
+			const snapshot = machine.getSnapshot()
+			expect(snapshot.value.superiority).toBe('follower')
+			expect(lockMethod).toHaveBeenCalledTimes(0)
+		})
+		it('requests a lock on init', () => {
+			const machine = createActor(clientMachine)
+			machine.start()
+			machine.send({
+				type: 'init',
+				wsUrl: SOCKET_URL,
+				dbName: 'jerry'
+			})
+
+			const snapshot = machine.getSnapshot()
+			// while the lock will still be requested at this point we won't instantly get it
+			expect(snapshot.value.superiority).toEqual('follower')
+			expect(lockMethod).toHaveBeenCalledOnce()
+		})
+
+		describe('callback', () => {
+			it('makes this worker superior when called', () => {
+				const machine = createActor(clientMachine)
+				machine.start()
+				machine.send({
+					type: 'init',
+					wsUrl: SOCKET_URL,
+					dbName: 'jerry'
+				})
+				expect(lockMethod).toHaveBeenCalledOnce()
+				expect(assignedCallback).toBeDefined()
+
+				assignedCallback?.()
+				vi.waitUntil(
+					() => {
+						const snapshot = machine.getSnapshot()
+						return snapshot.value.superiority === 'leader'
+					},
+					{
+						timeout: 500,
+						interval: 5
+					}
+				)
+
+				const snapshot = machine.getSnapshot()
+				expect(snapshot.value.superiority).toEqual('leader')
 			})
 		})
 	})

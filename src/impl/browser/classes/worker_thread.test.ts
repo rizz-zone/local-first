@@ -16,7 +16,8 @@ describe('WorkerLocalFirst', () => {
 			expect(snapshot.status).toEqual('active')
 			expect(snapshot.value).toEqual({
 				websocket: 'disconnected',
-				db: 'disconnected'
+				db: 'disconnected',
+				superiority: 'follower'
 			})
 		})
 		it('should stop the machine if it leaves scope while using using', () => {
