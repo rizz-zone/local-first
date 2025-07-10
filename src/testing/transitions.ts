@@ -1,6 +1,6 @@
 /* v8 ignore start */
 
-import z from 'zod/v4'
+import z from 'zod'
 import { createTransitionSchema } from '../exports/transition_schema'
 import { TransitionImpact } from '../types/transitions/Transition'
 
