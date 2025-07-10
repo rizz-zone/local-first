@@ -1,13 +1,13 @@
 /// <reference lib="webworker" />
 
 import { WorkerLocalFirst } from '../../classes/worker_thread'
-import { NoPortsError } from '../../errors'
-import type { BrowserFoundationDataPair } from '../../types/common/client/BrowserFoundationDataPair'
+import { NoPortsError } from '../../../../errors'
+import type { BrowserFoundationDataPair } from '../../../../types/common/client/BrowserFoundationDataPair'
 import {
 	UpstreamWorkerMessageType,
 	type UpstreamWorkerMessage
-} from '../../types/messages/worker/UpstreamWorkerMessage'
-import type { Transition } from '../../types/transitions/Transition'
+} from '../../../../types/messages/worker/UpstreamWorkerMessage'
+import type { Transition } from '../../../../types/transitions/Transition'
 
 const ctx = self as unknown as SharedWorkerGlobalScope
 

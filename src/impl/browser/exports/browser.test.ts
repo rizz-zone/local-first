@@ -1,12 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { BrowserLocalFirst } from './browser'
-import { DB_NAME, SOCKET_URL } from '../testing/constants'
+import { DB_NAME, SOCKET_URL } from '../../../testing/constants'
 import {
 	type UpstreamWorkerMessage,
 	UpstreamWorkerMessageType
-} from '../types/messages/worker/UpstreamWorkerMessage'
-import type { TestingTransition } from '../testing/transitions'
-import { TransitionImpact } from '../types/transitions/Transition'
+} from '../../../types/messages/worker/UpstreamWorkerMessage'
+import type { TestingTransition } from '../../../testing/transitions'
+import { TransitionImpact } from '../../../types/transitions/Transition'
 
 describe('BrowserLocalFirst', () => {
 	describe('Worker', () => {

@@ -4,8 +4,8 @@ import { WorkerLocalFirst } from '../../classes/worker_thread'
 import {
 	UpstreamWorkerMessageType,
 	type UpstreamWorkerMessage
-} from '../../types/messages/worker/UpstreamWorkerMessage'
-import type { Transition } from '../../types/transitions/Transition'
+} from '../../../../types/messages/worker/UpstreamWorkerMessage'
+import type { Transition } from '../../../../types/transitions/Transition'
 
 // TODO: LOCKING (selection of a leader using navigator.locks, routing transitions to that leader)
 export function workerEntrypoint<TransitionSchema extends Transition>() {

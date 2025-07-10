@@ -1,8 +1,8 @@
 import {
 	type UpstreamWorkerMessage,
 	UpstreamWorkerMessageType
-} from '../types/messages/worker/UpstreamWorkerMessage'
-import type { Transition } from '../types/transitions/Transition'
+} from '../../../types/messages/worker/UpstreamWorkerMessage'
+import type { Transition } from '../../../types/transitions/Transition'
 
 export class BrowserLocalFirst<TransitionSchema extends Transition> {
 	private readonly worker: Worker | SharedWorker
