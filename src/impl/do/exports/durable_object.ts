@@ -1,8 +1,11 @@
 export function createDurableObject() {
 	return class {
-		private b
+		#b
 		constructor() {
-			this.b = 10
+			this.#b = 10
+		}
+		getB() {
+			return this.#b
 		}
 	}
 }
