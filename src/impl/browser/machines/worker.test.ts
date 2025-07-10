@@ -26,9 +26,9 @@ const server = setupServer(
 )
 
 describe('worker machine', () => {
-	let assignedCallback: undefined | (() => unknown)
+	let assignedCallback: undefined | (() => Promise<unknown>)
 	const lockMethod = vi.fn().mockImplementation(
-		(_: string, callback: () => unknown) =>
+		(_: string, callback: () => Promise<unknown>) =>
 			new Promise<void>((resolve) => {
 				assignedCallback = callback
 				resolve()
@@ -176,6 +176,29 @@ describe('worker machine', () => {
 
 				const snapshot = machine.getSnapshot()
 				expect(snapshot.value.superiority).toEqual('leader')
+			})
+
+			it('does not resolve the promise returned by the callback', async () => {
+				const machine = createActor(clientMachine)
+				machine.start()
+				machine.send({
+					type: 'init',
+					wsUrl: SOCKET_URL,
+					dbName: 'jerry'
+				})
+				expect(lockMethod).toHaveBeenCalledOnce()
+				expect(assignedCallback).toBeDefined()
+
+				const promise = assignedCallback?.() as Promise<unknown>
+				const timeout = new Promise((resolve) => {
+					setTimeout(() => {
+						resolve('not resolved')
+					}, 600)
+				})
+
+				await expect(Promise.race([promise, timeout])).resolves.toBe(
+					'not resolved'
+				)
 			})
 		})
 	})
