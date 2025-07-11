@@ -13,9 +13,14 @@ import { WorkerLocalFirst } from '../../classes/worker_thread'
 const ctx = self as unknown as SharedWorkerGlobalScope
 
 class WorkerPort {
-	private static instances = new Map<InstanceKey, WorkerLocalFirst>()
-	private static activeInstanceClients = new Map<InstanceKey, number>()
-	private id = crypto.randomUUID()
+	private static readonly instances = new Map<InstanceKey, WorkerLocalFirst>()
+	private static readonly activeInstanceClients = new Map<InstanceKey, number>()
+	private readonly id = crypto.randomUUID()
+	private readonly port: MessagePort
+
+	constructor(port: MessagePort) {
+		this.port = port
+	}
 }
 
 // Each instance has a unique combination of URL + DB name.
