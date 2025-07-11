@@ -100,7 +100,9 @@ export const clientMachine = setup({
 						}
 					}
 				},
-				leader: {}
+				leader: {
+					type: 'final'
+				}
 			}
 		}
 	}
