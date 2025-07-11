@@ -7,7 +7,6 @@ import {
 } from '../../../../types/messages/worker/UpstreamWorkerMessage'
 import type { Transition } from '../../../../types/transitions/Transition'
 
-// TODO: LOCKING (selection of a leader using navigator.locks, routing transitions to that leader)
 export function workerEntrypoint<TransitionSchema extends Transition>() {
 	const ourObject = new WorkerLocalFirst()
 
