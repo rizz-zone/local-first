@@ -1,14 +1,14 @@
 /// <reference lib="webworker" />
 
-import { NoPortsError, PortDoubleInitError } from '../../../../errors'
-import type { InstanceData } from '../../../../types/common/client/InstanceData'
-import type { InstanceKey } from '../../../../types/common/client/InstanceKey'
+import { NoPortsError, PortDoubleInitError } from '../../../errors'
+import type { InstanceData } from '../../../types/common/client/InstanceData'
+import type { InstanceKey } from '../../../types/common/client/InstanceKey'
 import {
 	UpstreamWorkerMessageType,
 	type UpstreamWorkerMessage
-} from '../../../../types/messages/worker/UpstreamWorkerMessage'
-import type { Transition } from '../../../../types/transitions/Transition'
-import { WorkerLocalFirst } from '../../classes/worker_thread'
+} from '../../../types/messages/worker/UpstreamWorkerMessage'
+import type { Transition } from '../../../types/transitions/Transition'
+import { WorkerLocalFirst } from './worker_thread'
 
 const ctx = self as unknown as SharedWorkerGlobalScope
 

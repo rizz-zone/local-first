@@ -2,7 +2,7 @@ import { vi, beforeEach, describe, expect, it } from 'vitest'
 import { sharedWorkerEntrypoint } from './shared_worker'
 import { NoPortsError } from '../../../../errors'
 import { UpstreamWorkerMessageType } from '../../../../types/messages/worker/UpstreamWorkerMessage'
-import { WorkerLocalFirst } from '../../classes/worker_thread'
+import { WorkerLocalFirst } from '../../helpers/worker_thread'
 
 const mockWorkerLocalFirstInstance = {
 	init: vi.fn(),

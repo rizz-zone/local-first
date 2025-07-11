@@ -1,6 +1,6 @@
 /// <reference lib="webworker" />
 
-import { WorkerLocalFirst } from '../../classes/worker_thread'
+import { WorkerLocalFirst } from '../../helpers/worker_thread'
 import {
 	UpstreamWorkerMessageType,
 	type UpstreamWorkerMessage

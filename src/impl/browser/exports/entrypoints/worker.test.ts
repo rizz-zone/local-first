@@ -1,7 +1,7 @@
 import { vi, beforeEach, describe, expect, it } from 'vitest'
 import { workerEntrypoint } from './worker'
 import { UpstreamWorkerMessageType } from '../../../../types/messages/worker/UpstreamWorkerMessage'
-import { WorkerLocalFirst } from '../../classes/worker_thread'
+import { WorkerLocalFirst } from '../../helpers/worker_thread'
 
 const workerScope = globalThis as unknown as DedicatedWorkerGlobalScope
 
