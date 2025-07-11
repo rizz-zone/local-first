@@ -18,11 +18,35 @@ const instances = new Map<InstanceKey, WorkerLocalFirst>()
 const activeInstanceClients = new Map<InstanceKey, number>()
 const ports = new Map<UUID, MessagePort>()
 
+function handleDisconnect(portId: UUID, instanceKey?: InstanceKey) {
+	if (!ports.has(portId))
+		throw new Error("Tried to disconnect a port that doesn't exist!")
+	ports.delete(portId)
+
+	// If the instance never got created, we don't need to clean it up.
+	if (!instanceKey) return
+
+	// Decrease activeInstanceClients or delete the instance.
+	const clients = activeInstanceClients.get(instanceKey)
+	if (!clients)
+		throw new Error('Instance we tried to disconnect has no clients!')
+	if (clients === 1) {
+		activeInstanceClients.delete(instanceKey)
+		instances.delete(instanceKey)
+		return
+	}
+	activeInstanceClients.set(instanceKey, clients - 1)
+}
+
 function init<TransitionSchema extends Transition>() {
 	ctx.onconnect = (event) => {
 		const port = event.ports[0]
 		if (!port)
 			throw new NoPortsError('onconnect fired, but there is no associated port')
+
+		// These are important for everything we do in the port.
+		let instanceKey: InstanceKey
+		let instance: WorkerLocalFirst
 
 		// Pings happen between the main thread and the worker. If a ping is missed
 		// (the interval is 60s, so this is unlikely), we disconnect the port.
@@ -31,7 +55,7 @@ function init<TransitionSchema extends Transition>() {
 			if (pingTimeout) clearTimeout(pingTimeout)
 			pingTimeout = setTimeout(
 				() => {
-					handleDisconnect(portId, objectKey)
+					handleDisconnect(portId, instanceKey)
 				},
 				// We could use a shorter timeout, but we want the user
 				// to be able to Cmd / Ctrl + Shift + T cleanly.
@@ -42,9 +66,6 @@ function init<TransitionSchema extends Transition>() {
 
 		const portId = crypto.randomUUID()
 		ports.set(portId, port)
-
-		let instanceKey: InstanceKey
-		let instance: WorkerLocalFirst
 
 		port.onmessage = (
 			event: MessageEvent<UpstreamWorkerMessage<TransitionSchema>>
@@ -70,7 +91,8 @@ function init<TransitionSchema extends Transition>() {
 					const potentialInstance = instances.get(instanceKey)
 					if (potentialInstance) instance = potentialInstance
 					else {
-						instance = new WorkerLocalFirst()
+						using newInstance = new WorkerLocalFirst()
+						instance = newInstance
 						instance.init(message.data)
 						instances.set(instanceKey, instance)
 					}
