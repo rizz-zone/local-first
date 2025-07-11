@@ -12,6 +12,12 @@ import { WorkerLocalFirst } from '../../classes/worker_thread'
 
 const ctx = self as unknown as SharedWorkerGlobalScope
 
+class WorkerPort {
+	private static instances = new Map<InstanceKey, WorkerLocalFirst>()
+	private static activeInstanceClients = new Map<InstanceKey, number>()
+	private id = crypto.randomUUID()
+}
+
 // Each instance has a unique combination of URL + DB name.
 // If multiple tabs want the same combination, they won't be assigned different instances.
 const instances = new Map<InstanceKey, WorkerLocalFirst>()
