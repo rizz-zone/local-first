@@ -2,7 +2,7 @@
 
 import { WorkerLocalFirst } from '../../classes/worker_thread'
 import { NoPortsError } from '../../../../errors'
-import type { BrowserFoundationDataPair } from '../../../../types/common/client/BrowserFoundationDataPair'
+import type { InstanceData } from '../../../../types/common/client/InstanceData'
 import {
 	UpstreamWorkerMessageType,
 	type UpstreamWorkerMessage
@@ -18,10 +18,7 @@ export function sharedWorkerEntrypoint<TransitionSchema extends Transition>() {
 	const activeTabsMap = new Map<string, number>()
 
 	// TODO: This will be used in response to things like ping timeouts and errors and stuff
-	function handleDisconnect(
-		portId: string,
-		objectKey: BrowserFoundationDataPair
-	) {
+	function handleDisconnect(portId: string, objectKey: InstanceData) {
 		portMap.delete(portId)
 		const objectKeyString = `${objectKey.wsUrl}::${objectKey.dbName}`
 		const activeTabs = activeTabsMap.get(objectKeyString)
@@ -57,7 +54,7 @@ export function sharedWorkerEntrypoint<TransitionSchema extends Transition>() {
 		}
 		resetPingTimeout()
 
-		let objectKey: BrowserFoundationDataPair
+		let objectKey: InstanceData
 
 		port.onmessage = (
 			event: MessageEvent<UpstreamWorkerMessage<TransitionSchema>>

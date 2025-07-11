@@ -1,8 +1,8 @@
 /// <reference lib="webworker" />
 
 import { NoPortsError, PortDoubleInitError } from '../../../../errors'
+import type { InstanceData } from '../../../../types/common/client/InstanceData'
 import type { InstanceKey } from '../../../../types/common/client/InstanceKey'
-import type { UUID } from '../../../../types/common/UUID'
 import {
 	UpstreamWorkerMessageType,
 	type UpstreamWorkerMessage
@@ -12,41 +12,106 @@ import { WorkerLocalFirst } from '../../classes/worker_thread'
 
 const ctx = self as unknown as SharedWorkerGlobalScope
 
-class WorkerPort {
+class WorkerPort<TransitionSchema extends Transition> {
 	private static readonly instances = new Map<InstanceKey, WorkerLocalFirst>()
 	private static readonly activeInstanceClients = new Map<InstanceKey, number>()
 	private readonly id = crypto.randomUUID()
-	private readonly port: MessagePort
+	private port?: MessagePort
+	private instanceKey?: InstanceKey
+	private instance?: WorkerLocalFirst
+
+	private timeout? = setTimeout(this[Symbol.dispose], 60000)
+	private resetTimeout() {
+		clearTimeout(this.timeout)
+		this.timeout = setTimeout(this[Symbol.dispose], 60000)
+	}
+
+	public init(data: InstanceData) {
+		if (this.instanceKey)
+			throw new PortDoubleInitError(
+				'SharedWorker port was initialized twice! This ' +
+					'is a process that happens internally, so ' +
+					'this might be a problem with ground0. ' +
+					'Report at ' +
+					'https://ground0.rizz.zone/report/double-init'
+			)
+
+		// We need to set both maps up in order to init this port.
+		// Both need an InstanceKey.
+		this.instanceKey = `${data.wsUrl}::${data.dbName}`
+
+		// Create the instance if it doesn't exist yet.
+		const potentialInstance = (
+			this.constructor as typeof WorkerPort
+		).instances.get(this.instanceKey)
+		if (potentialInstance) this.instance = potentialInstance
+		else {
+			this.instance = new WorkerLocalFirst()
+			this.instance.init(data)
+			;(this.constructor as typeof WorkerPort).instances.set(
+				this.instanceKey,
+				this.instance
+			)
+		}
+
+		// Bump clients for this instance by 1.
+		// This will create the count if it's new.
+		const clients = (
+			this.constructor as typeof WorkerPort
+		).activeInstanceClients.get(this.instanceKey)
+		;(this.constructor as typeof WorkerPort).activeInstanceClients.set(
+			this.instanceKey,
+			(clients ?? 0) + 1
+		)
+	}
 
 	constructor(port: MessagePort) {
 		this.port = port
+		this.port.onmessage = (
+			event: MessageEvent<UpstreamWorkerMessage<TransitionSchema>>
+		) => {
+			const message = event.data
+			switch (message.type) {
+				case UpstreamWorkerMessageType.Init:
+					this.init(message.data)
+					break
+				case UpstreamWorkerMessageType.Ping:
+					this.resetTimeout()
+					break
+			}
+		}
 	}
-}
 
-// Each instance has a unique combination of URL + DB name.
-// If multiple tabs want the same combination, they won't be assigned different instances.
-const instances = new Map<InstanceKey, WorkerLocalFirst>()
-const activeInstanceClients = new Map<InstanceKey, number>()
-const ports = new Map<UUID, MessagePort>()
+	[Symbol.dispose]() {
+		// Static things get changed first.
+		// If the instance never got created, we don't need to clean it up.
+		if (this.instanceKey) {
+			// Decrease activeInstanceClients or delete the instance.
+			const clients = (
+				this.constructor as typeof WorkerPort
+			).activeInstanceClients.get(this.instanceKey)
+			if (!clients)
+				throw new Error('Instance we tried to disconnect has no clients!')
+			if (clients === 1) {
+				;(this.constructor as typeof WorkerPort).activeInstanceClients.delete(
+					this.instanceKey
+				)
+				;(this.constructor as typeof WorkerPort).instances.delete(
+					this.instanceKey
+				)
+				return
+			}
+			;(this.constructor as typeof WorkerPort).activeInstanceClients.set(
+				this.instanceKey,
+				clients - 1
+			)
+		}
 
-function handleDisconnect(portId: UUID, instanceKey?: InstanceKey) {
-	if (!ports.has(portId))
-		throw new Error("Tried to disconnect a port that doesn't exist!")
-	ports.delete(portId)
-
-	// If the instance never got created, we don't need to clean it up.
-	if (!instanceKey) return
-
-	// Decrease activeInstanceClients or delete the instance.
-	const clients = activeInstanceClients.get(instanceKey)
-	if (!clients)
-		throw new Error('Instance we tried to disconnect has no clients!')
-	if (clients === 1) {
-		activeInstanceClients.delete(instanceKey)
-		instances.delete(instanceKey)
-		return
+		this.instance = undefined
+		this.instanceKey = undefined
+		this.timeout = undefined
+		this.port = undefined
 	}
-	activeInstanceClients.set(instanceKey, clients - 1)
 }
 
 function init<TransitionSchema extends Transition>() {
@@ -55,69 +120,8 @@ function init<TransitionSchema extends Transition>() {
 		if (!port)
 			throw new NoPortsError('onconnect fired, but there is no associated port')
 
-		// These are important for everything we do in the port.
-		let instanceKey: InstanceKey
-		let instance: WorkerLocalFirst
-
-		// Pings happen between the main thread and the worker. If a ping is missed
-		// (the interval is 60s, so this is unlikely), we disconnect the port.
-		let pingTimeout: ReturnType<typeof setTimeout>
-		function resetPingTimeout() {
-			if (pingTimeout) clearTimeout(pingTimeout)
-			pingTimeout = setTimeout(
-				() => {
-					handleDisconnect(portId, instanceKey)
-				},
-				// We could use a shorter timeout, but we want the user
-				// to be able to Cmd / Ctrl + Shift + T cleanly.
-				60 * 1000
-			)
-		}
-		resetPingTimeout()
-
-		const portId = crypto.randomUUID()
-		ports.set(portId, port)
-
-		port.onmessage = (
-			event: MessageEvent<UpstreamWorkerMessage<TransitionSchema>>
-		) => {
-			const message = event.data
-			switch (message.type) {
-				case UpstreamWorkerMessageType.Init: {
-					// If our instanceKey is set, this is a double init.
-					if (instanceKey)
-						throw new PortDoubleInitError(
-							'SharedWorker port was initialized twice! This ' +
-								'is a process that happens internally, so ' +
-								'this might be a problem with ground0. ' +
-								'Report at ' +
-								'https://ground0.rizz.zone/report/double-init'
-						)
-
-					// We need to set both maps up in order to init this port.
-					// Both need an InstanceKey.
-					instanceKey = `${message.data.wsUrl}::${message.data.dbName}`
-
-					// Create the instance if it doesn't exist yet.
-					const potentialInstance = instances.get(instanceKey)
-					if (potentialInstance) instance = potentialInstance
-					else {
-						using newInstance = new WorkerLocalFirst()
-						instance = newInstance
-						instance.init(message.data)
-						instances.set(instanceKey, instance)
-					}
-
-					// Bump clients for this instance by 1.
-					// This will create the count if it's new.
-					const clients = activeInstanceClients.get(instanceKey)
-					activeInstanceClients.set(instanceKey, (clients ?? 0) + 1)
-
-					break
-				}
-			}
-		}
+		new WorkerPort<TransitionSchema>(port)
 	}
 }
 
-export default { init }
+export const portManager = { init }
