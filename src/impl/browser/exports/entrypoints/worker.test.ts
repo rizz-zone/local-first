@@ -28,3 +28,27 @@ export function workerEntrypoint(): void {
     console.error(event.data);
   };
 }
+
+if (import.meta.vitest) {
+  const { describe, it, expect } = import.meta.vitest;
+
+  describe('workerEntrypoint', () => {
+    it('should set globalThis.onmessage and onmessageerror handlers', () => {
+      const originalOnMessage = globalThis.onmessage;
+      const originalOnMessageError = globalThis.onmessageerror;
+      workerEntrypoint();
+      expect(typeof globalThis.onmessage).toBe('function');
+      expect(typeof globalThis.onmessageerror).toBe('function');
+      globalThis.onmessage = originalOnMessage;
+      globalThis.onmessageerror = originalOnMessageError;
+    });
+
+    it('should handle malformed messages without throwing', () => {
+      workerEntrypoint();
+      const handler = globalThis.onmessage!;
+      expect(() => handler({} as any)).not.toThrow();
+      expect(() => handler({ data: null } as any)).not.toThrow();
+      expect(() => handler({ data: { foo: 'bar' } } as any)).not.toThrow();
+    });
+  });
+}

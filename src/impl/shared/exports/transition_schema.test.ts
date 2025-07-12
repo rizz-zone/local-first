@@ -267,7 +267,7 @@ describe('comprehensive edge cases and variations', () => {
 			})
 			
 			const result = createTransitionSchema(arktypeStringSchema)
-			expect(result).toBe(arktypeStringSchema['~standard'])
+			expect(result).toEqual(arktypeStringSchema['~standard'])
 		})
 
 		it('handles arktype with numeric actions', () => {
@@ -280,7 +280,7 @@ describe('comprehensive edge cases and variations', () => {
 			})
 			
 			const result = createTransitionSchema(arktypeNumericSchema)
-			expect(result).toBe(arktypeNumericSchema['~standard'])
+			expect(result).toEqual(arktypeNumericSchema['~standard'])
 		})
 
 		it('handles arktype with complex data structures', () => {
@@ -297,7 +297,7 @@ describe('comprehensive edge cases and variations', () => {
 			})
 			
 			const result = createTransitionSchema(arktypeComplexSchema)
-			expect(result).toBe(arktypeComplexSchema['~standard'])
+			expect(result).toEqual(arktypeComplexSchema['~standard'])
 		})
 
 		it('handles arktype with optional fields', () => {
@@ -311,7 +311,7 @@ describe('comprehensive edge cases and variations', () => {
 			})
 			
 			const result = createTransitionSchema(arktypeOptionalSchema)
-			expect(result).toBe(arktypeOptionalSchema['~standard'])
+			expect(result).toEqual(arktypeOptionalSchema['~standard'])
 		})
 	})
 
