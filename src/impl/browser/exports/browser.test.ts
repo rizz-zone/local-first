@@ -2,6 +2,7 @@ import type {
   UpstreamWorkerMessage,
   UpstreamWorkerMessageType
 } from '../../../types/messages/worker/UpstreamWorkerMessage'
+import { describe, expect, it } from 'vitest'
 
 interface BrowserLocalFirstConfig {
   dbName: string
@@ -53,3 +54,9 @@ function isSharedWorker(
     typeof (worker as SharedWorker).port.postMessage === 'function'
   )
 }
+
+describe('BrowserLocalFirst', () => {
+  it('should be defined', () => {
+    expect(BrowserLocalFirst).toBeDefined()
+  })
+})
