@@ -72,7 +72,7 @@ describe('worker machine', () => {
 			machine.start()
 			const { context } = machine.getSnapshot()
 
-			expect(WebSocketMock).toHaveBeenCalledTimes(0)
+			expect(WebSocketMock).not.toBeCalled()
 			expect(context.socket).toBeUndefined()
 			expect(context.wsUrl).toBeUndefined()
 		})
@@ -133,7 +133,7 @@ describe('worker machine', () => {
 
 			const snapshot = machine.getSnapshot()
 			expect(snapshot.value.superiority).toBe('follower')
-			expect(lockMethod).toHaveBeenCalledTimes(0)
+			expect(lockMethod).not.toBeCalled()
 		})
 		it('requests a lock on init', () => {
 			const machine = createActor(clientMachine)
