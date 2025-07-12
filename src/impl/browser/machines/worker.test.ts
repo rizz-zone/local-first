@@ -19,14 +19,11 @@ const server = setupServer(
 	socketEndpoint.addEventListener('connection', (server) => {
 		server.server.connect()
 	}),
-	// We shouldn't need this but msw complains (without an error) if we don't have it
-	http.get(SOCKET_URL.replace('wss', 'https'), () => {
-		return new Response()
-	})
+	http.get(SOCKET_URL.replace('wss', 'https'), () => new Response())
 )
 
 describe('worker machine', () => {
-	let assignedCallback: undefined | (() => Promise<unknown>)
+	let assignedCallback: (() => Promise<unknown>) | undefined
 	const lockMethod = vi.fn().mockImplementation(
 		(_: string, callback: () => Promise<unknown>) =>
 			new Promise<void>((resolve) => {
@@ -34,6 +31,7 @@ describe('worker machine', () => {
 				resolve()
 			})
 	)
+
 	beforeAll(() => {
 		// @ts-expect-error navigator.locks doesn't exist in jsdom
 		navigator.locks = {
@@ -56,6 +54,7 @@ describe('worker machine', () => {
 	describe('socket setup', () => {
 		let WebSocketOriginal: typeof WebSocket
 		let WebSocketMock: typeof WebSocket
+
 		beforeAll(() => {
 			WebSocketOriginal = globalThis.WebSocket
 		})
@@ -76,6 +75,7 @@ describe('worker machine', () => {
 			expect(context.socket).toBeUndefined()
 			expect(context.wsUrl).toBeUndefined()
 		})
+
 		it('sets a websocket up after init', () => {
 			const machine = createActor(clientMachine)
 			machine.start()
@@ -86,7 +86,8 @@ describe('worker machine', () => {
 			})
 			const { context } = machine.getSnapshot()
 
-			expect(WebSocketMock).toHaveBeenCalledExactlyOnceWith(SOCKET_URL)
+			expect(WebSocketMock).toHaveBeenCalledOnce()
+			expect(WebSocketMock).toHaveBeenCalledWith(SOCKET_URL)
 			expect(context.socket).toBeInstanceOf(WebSocket)
 			expect(context.wsUrl).toBe(SOCKET_URL)
 		})
@@ -145,13 +146,12 @@ describe('worker machine', () => {
 			})
 
 			const snapshot = machine.getSnapshot()
-			// while the lock will still be requested at this point we won't instantly get it
 			expect(snapshot.value.superiority).toEqual('follower')
 			expect(lockMethod).toHaveBeenCalledOnce()
 		})
 
 		describe('callback', () => {
-			it('makes this worker superior when called', () => {
+			it('makes this worker superior when called', async () => {
 				const machine = createActor(clientMachine)
 				machine.start()
 				machine.send({
@@ -162,16 +162,11 @@ describe('worker machine', () => {
 				expect(lockMethod).toHaveBeenCalledOnce()
 				expect(assignedCallback).toBeDefined()
 
-				assignedCallback?.()
-				vi.waitUntil(
-					() => {
-						const snapshot = machine.getSnapshot()
-						return snapshot.value.superiority === 'leader'
-					},
-					{
-						timeout: 500,
-						interval: 5
-					}
+				await assignedCallback!()
+
+				await vi.waitUntil(
+					() => machine.getSnapshot().value.superiority === 'leader',
+					{ timeout: 500, interval: 5 }
 				)
 
 				const snapshot = machine.getSnapshot()
@@ -189,7 +184,7 @@ describe('worker machine', () => {
 				expect(lockMethod).toHaveBeenCalledOnce()
 				expect(assignedCallback).toBeDefined()
 
-				const promise = assignedCallback?.() as Promise<unknown>
+				const promise = assignedCallback!()
 				const timeout = new Promise((resolve) => {
 					setTimeout(() => {
 						resolve('not resolved')
@@ -202,7 +197,6 @@ describe('worker machine', () => {
 			})
 		})
 	})
-})
 
 	describe('database state transitions', () => {
 		it('can transition to connected state', () => {
@@ -214,7 +208,6 @@ describe('worker machine', () => {
 				dbName: 'jerry'
 			})
 
-			// Simulate database connection success
 			machine.send({ type: 'db connected' })
 
 			const snapshot = machine.getSnapshot()
@@ -230,7 +223,6 @@ describe('worker machine', () => {
 				dbName: 'jerry'
 			})
 
-			// Simulate database connection failure
 			machine.send({ type: 'db cannot connect' })
 
 			const snapshot = machine.getSnapshot()
@@ -254,18 +246,18 @@ describe('worker machine', () => {
 			const machine = createActor(clientMachine)
 			machine.start()
 
-			// Send database events before init
 			machine.send({ type: 'db connected' })
 			machine.send({ type: 'db cannot connect' })
 
 			const snapshot = machine.getSnapshot()
-			expect(snapshot.value.db).toBe('will never connect') // Last event wins
+			expect(snapshot.value.db).toBe('will never connect')
 		})
 	})
 
 	describe('websocket connection error handling', () => {
 		let WebSocketOriginal: typeof WebSocket
 		let MockWebSocket: any
+
 		beforeAll(() => {
 			WebSocketOriginal = globalThis.WebSocket
 		})
@@ -282,11 +274,9 @@ describe('worker machine', () => {
 				dbName: 'jerry'
 			})
 
-			// Manually trigger connected state first
 			machine.send({ type: 'ws connected' })
 			expect(machine.getSnapshot().value.websocket).toBe('connected')
 
-			// Then trigger connection issue
 			machine.send({ type: 'ws connection issue' })
 			const snapshot = machine.getSnapshot()
 			expect(snapshot.value.websocket).toBe('disconnected')
@@ -309,14 +299,14 @@ describe('worker machine', () => {
 				wsUrl: SOCKET_URL,
 				dbName: 'jerry'
 			})
-			expect(MockWebSocket).toHaveBeenCalledTimes(2) // Initial entry + init action
+			expect(MockWebSocket).toHaveBeenCalledTimes(2)
 
 			machine.send({
 				type: 'init',
 				wsUrl: 'wss://different.com',
 				dbName: 'tom'
 			})
-			expect(MockWebSocket).toHaveBeenCalledTimes(3) // Additional call for new init
+			expect(MockWebSocket).toHaveBeenCalledTimes(3)
 		})
 	})
 
@@ -325,15 +315,13 @@ describe('worker machine', () => {
 			const machine = createActor(clientMachine)
 			machine.start()
 
-			// Initial state
 			let snapshot = machine.getSnapshot()
 			expect(snapshot.value).toEqual({
 				websocket: 'disconnected',
-				db: 'disconnected', 
+				db: 'disconnected',
 				superiority: 'follower'
 			})
 
-			// Init triggers changes in websocket and superiority, but not db state
 			machine.send({
 				type: 'init',
 				wsUrl: SOCKET_URL,
@@ -341,23 +329,21 @@ describe('worker machine', () => {
 			})
 
 			snapshot = machine.getSnapshot()
-			expect(snapshot.value.websocket).toBe('disconnected') // Still disconnected until ws connected event
-			expect(snapshot.value.db).toBe('disconnected') // Still disconnected until db connected event
-			expect(snapshot.value.superiority).toBe('follower') // Still follower until lock acquired
+			expect(snapshot.value.websocket).toBe('disconnected')
+			expect(snapshot.value.db).toBe('disconnected')
+			expect(snapshot.value.superiority).toBe('follower')
 
-			// Trigger websocket connection
 			machine.send({ type: 'ws connected' })
 			snapshot = machine.getSnapshot()
 			expect(snapshot.value.websocket).toBe('connected')
-			expect(snapshot.value.db).toBe('disconnected') // Other states unchanged
+			expect(snapshot.value.db).toBe('disconnected')
 			expect(snapshot.value.superiority).toBe('follower')
 
-			// Trigger database connection
 			machine.send({ type: 'db connected' })
 			snapshot = machine.getSnapshot()
 			expect(snapshot.value.websocket).toBe('connected')
 			expect(snapshot.value.db).toBe('connected')
-			expect(snapshot.value.superiority).toBe('follower') // Still follower
+			expect(snapshot.value.superiority).toBe('follower')
 		})
 
 		it('handles final states correctly', () => {
@@ -369,11 +355,8 @@ describe('worker machine', () => {
 				dbName: 'jerry'
 			})
 
-			// Move to final states
 			machine.send({ type: 'db connected' })
-			if (assignedCallback) {
-				assignedCallback()
-			}
+			assignedCallback!()
 
 			const snapshot = machine.getSnapshot()
 			expect(snapshot.value.db).toBe('connected')
@@ -386,7 +369,6 @@ describe('worker machine', () => {
 			const machine = createActor(clientMachine)
 			machine.start()
 
-			// Manually call establishSocket without wsUrl
 			const snapshot = machine.getSnapshot()
 			expect(snapshot.context.socket).toBeUndefined()
 			expect(snapshot.context.wsUrl).toBeUndefined()
@@ -404,11 +386,8 @@ describe('worker machine', () => {
 			const beforeSnapshot = machine.getSnapshot()
 			const initialContext = { ...beforeSnapshot.context }
 
-			// Send non-init event
 			machine.send({ type: 'ws connected' })
-
 			const afterSnapshot = machine.getSnapshot()
-			// Context should be preserved (dbName and wsUrl unchanged)
 			expect(afterSnapshot.context.wsUrl).toBe(initialContext.wsUrl)
 			expect(afterSnapshot.context.dbName).toBe(initialContext.dbName)
 		})
@@ -446,24 +425,24 @@ describe('worker machine', () => {
 
 		it('handles missing navigator.locks gracefully', () => {
 			// @ts-expect-error Remove navigator.locks
-			navigator.locks = undefined
-
-			const machine = createActor(clientMachine)
-			machine.start()
+			delete (navigator as any).locks
 
 			expect(() => {
+				const machine = createActor(clientMachine)
+				machine.start()
 				machine.send({
 					type: 'init',
 					wsUrl: SOCKET_URL,
 					dbName: 'jerry'
 				})
-			}).toThrow() // Should throw since navigator.locks is undefined
+			}).toThrow()
 		})
 	})
 
 	describe('WebSocket onopen callback', () => {
 		let WebSocketOriginal: typeof WebSocket
 		let mockSocket: any
+
 		beforeAll(() => {
 			WebSocketOriginal = globalThis.WebSocket
 		})
@@ -489,7 +468,6 @@ describe('worker machine', () => {
 				dbName: 'jerry'
 			})
 
-			expect(mockSocket.onopen).toBeDefined()
 			expect(typeof mockSocket.onopen).toBe('function')
 		})
 
@@ -513,10 +491,7 @@ describe('worker machine', () => {
 
 			expect(machine.getSnapshot().value.websocket).toBe('disconnected')
 
-			// Simulate onopen callback
-			if (mockSocket.onopen) {
-				mockSocket.onopen()
-			}
+			mockSocket.onopen!()
 
 			expect(machine.getSnapshot().value.websocket).toBe('connected')
 		})
@@ -525,15 +500,14 @@ describe('worker machine', () => {
 	describe('edge case event combinations', () => {
 		it('handles events sent before machine is started', () => {
 			const machine = createActor(clientMachine)
-			
-			// Send events before starting - should be ignored
+			// @ts-expect-error send before start
 			machine.send({
 				type: 'init',
 				wsUrl: SOCKET_URL,
 				dbName: 'jerry'
 			})
-
 			machine.start()
+
 			const snapshot = machine.getSnapshot()
 			expect(snapshot.context.wsUrl).toBeUndefined()
 			expect(snapshot.context.dbName).toBeUndefined()
@@ -548,7 +522,6 @@ describe('worker machine', () => {
 				dbName: 'jerry'
 			})
 
-			// Rapid fire events
 			machine.send({ type: 'ws connected' })
 			machine.send({ type: 'ws connection issue' })
 			machine.send({ type: 'ws connected' })
@@ -557,14 +530,12 @@ describe('worker machine', () => {
 
 			const snapshot = machine.getSnapshot()
 			expect(snapshot.value.websocket).toBe('connected')
-			expect(snapshot.value.db).toBe('will never connect') // Final event wins
+			expect(snapshot.value.db).toBe('will never connect')
 		})
 
 		it('maintains state consistency during complex transitions', () => {
 			const machine = createActor(clientMachine)
 			machine.start()
-
-			// Complex sequence of events
 			machine.send({
 				type: 'init',
 				wsUrl: SOCKET_URL,
@@ -572,10 +543,7 @@ describe('worker machine', () => {
 			})
 			machine.send({ type: 'ws connected' })
 			machine.send({ type: 'db connected' })
-			
-			if (assignedCallback) {
-				assignedCallback()
-			}
+			assignedCallback!()
 
 			const snapshot = machine.getSnapshot()
 			expect(snapshot.value).toEqual({
@@ -593,20 +561,17 @@ describe('worker machine', () => {
 			const machine = createActor(clientMachine)
 			machine.start()
 
-			// These should not cause TypeScript errors
 			machine.send({
 				type: 'init',
 				wsUrl: 'wss://example.com',
 				dbName: 'test'
 			})
-
 			machine.send({ type: 'ws connected' })
 			machine.send({ type: 'ws connection issue' })
 			machine.send({ type: 'db connected' })
 			machine.send({ type: 'db cannot connect' })
 			machine.send({ type: 'leader lock acquired' })
 
-			// Verify machine accepts all valid events
 			expect(machine.getSnapshot()).toBeDefined()
 		})
 
@@ -624,7 +589,7 @@ describe('worker machine', () => {
 				'very-long-database-name-with-many-characters'
 			]
 
-			testCases.forEach(dbName => {
+			testCases.forEach((dbName) => {
 				machine.send({
 					type: 'init',
 					wsUrl: SOCKET_URL,
@@ -636,3 +601,4 @@ describe('worker machine', () => {
 			})
 		})
 	})
+})
