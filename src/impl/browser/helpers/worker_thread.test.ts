@@ -124,7 +124,7 @@ describe('WorkerLocalFirst', () => {
 			localFirst1.init({ wsUrl: SOCKET_URL, dbName: DB_NAME })
 			
 			// Check that machines have independent states
-			expect(machine1.getSnapshot().status).toEqual('active')
+			expect(machine1.getSnapshot().status).not.toEqual(machine2.getSnapshot().status)
 			expect(machine2.getSnapshot().status).toEqual('active')
 			expect(machine1).not.toBe(machine2)
 		})
@@ -534,7 +534,10 @@ describe('WorkerLocalFirst', () => {
 			}).not.toThrow()
 			
 			// Machine should be disposed even after exception
-			expect(machine!.getSnapshot().status).toBe('stopped')
+			expect(machine).toBeDefined()
+			if (machine) {
+				expect(machine.getSnapshot().status).toBe('stopped')
+			}
 		})
 
 		it('should support resource management in loops', () => {

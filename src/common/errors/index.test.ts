@@ -1,459 +1,414 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'vitest'
 import {
   NoPortsError,
   PortDoubleInitError,
   WorkerDoubleInitError,
   TestOnlyError,
-  AbsentPortDisconnectionError,
-} from './index';
+  AbsentPortDisconnectionError
+} from './index'
 
-describe('Custom Error Classes', () => {
+describe('Error Classes', () => {
   describe('NoPortsError', () => {
-    it('should create an instance with correct message', () => {
-      const message = 'No ports available';
-      const error = new NoPortsError(message);
+    it('should create a NoPortsError with correct name and message', () => {
+      const message = 'No ports available for connection'
+      const error = new NoPortsError(message)
 
-      expect(error.message).toBe(message);
-      expect(error.name).toBe('NoPortsError');
-      expect(error).toBeInstanceOf(NoPortsError);
-      expect(error).toBeInstanceOf(Error);
-    });
-
-    it('should maintain proper prototype chain', () => {
-      const error = new NoPortsError('test message');
-
-      expect(Object.getPrototypeOf(error)).toBe(NoPortsError.prototype);
-      expect(error.constructor).toBe(NoPortsError);
-    });
-
-    it('should be catchable as Error', () => {
-      const message = 'Test error message';
-
-      expect(() => {
-        throw new NoPortsError(message);
-      }).toThrow(Error);
-
-      expect(() => {
-        throw new NoPortsError(message);
-      }).toThrow(NoPortsError);
-
-      expect(() => {
-        throw new NoPortsError(message);
-      }).toThrow(message);
-    });
+      expect(error).toBeInstanceOf(Error)
+      expect(error).toBeInstanceOf(NoPortsError)
+      expect(error.name).toBe('NoPortsError')
+      expect(error.message).toBe(message)
+      expect(error.stack).toBeDefined()
+    })
 
     it('should handle empty message', () => {
-      const error = new NoPortsError('');
+      const error = new NoPortsError('')
 
-      expect(error.message).toBe('');
-      expect(error.name).toBe('NoPortsError');
-    });
+      expect(error.name).toBe('NoPortsError')
+      expect(error.message).toBe('')
+    })
 
     it('should handle special characters in message', () => {
-      const message = 'Error with special chars: áéíóú 中文 🚀';
-      const error = new NoPortsError(message);
+      const message = 'No ports: 特殊字符 & symbols 🚫'
+      const error = new NoPortsError(message)
 
-      expect(error.message).toBe(message);
-    });
+      expect(error.message).toBe(message)
+    })
 
-    it('should have stack trace', () => {
-      const error = new NoPortsError('test');
+    it('should maintain correct prototype chain', () => {
+      const error = new NoPortsError('test')
 
-      expect(error.stack).toBeDefined();
-      expect(typeof error.stack).toBe('string');
-    });
+      expect(Object.getPrototypeOf(error)).toBe(NoPortsError.prototype)
+      expect(error instanceof NoPortsError).toBe(true)
+      expect(error instanceof Error).toBe(true)
+    })
 
-    it('should work in try-catch blocks', () => {
-      const message = 'Port error occurred';
-      let caughtError: Error | null = null;
+    it('should be serializable to JSON', () => {
+      const message = 'No ports available'
+      const error = new NoPortsError(message)
 
-      try {
-        throw new NoPortsError(message);
-      } catch (error) {
-        caughtError = error as Error;
-      }
+      const serialized = JSON.stringify(error, ['name', 'message'])
+      const parsed = JSON.parse(serialized)
 
-      expect(caughtError).toBeInstanceOf(NoPortsError);
-      expect(caughtError?.message).toBe(message);
-    });
-  });
+      expect(parsed.name).toBe('NoPortsError')
+      expect(parsed.message).toBe(message)
+    })
+  })
 
   describe('PortDoubleInitError', () => {
-    it('should create an instance with correct message', () => {
-      const message = 'Port already initialized';
-      const error = new PortDoubleInitError(message);
+    it('should create a PortDoubleInitError with correct name and message', () => {
+      const message = 'Port has already been initialized'
+      const error = new PortDoubleInitError(message)
 
-      expect(error.message).toBe(message);
-      expect(error.name).toBe('DoublePortInitError');
-      expect(error).toBeInstanceOf(PortDoubleInitError);
-      expect(error).toBeInstanceOf(Error);
-    });
+      expect(error).toBeInstanceOf(Error)
+      expect(error).toBeInstanceOf(PortDoubleInitError)
+      expect(error.name).toBe('DoublePortInitError')
+      expect(error.message).toBe(message)
+      expect(error.stack).toBeDefined()
+    })
 
-    it('should maintain proper prototype chain', () => {
-      const error = new PortDoubleInitError('test message');
+    it('should handle empty message', () => {
+      const error = new PortDoubleInitError('')
 
-      expect(Object.getPrototypeOf(error)).toBe(PortDoubleInitError.prototype);
-      expect(error.constructor).toBe(PortDoubleInitError);
-    });
-
-    it('should be distinguishable from other custom errors', () => {
-      const portError = new PortDoubleInitError('port error');
-      const noPortsError = new NoPortsError('no ports error');
-
-      expect(portError).toBeInstanceOf(PortDoubleInitError);
-      expect(portError).not.toBeInstanceOf(NoPortsError);
-      expect(noPortsError).not.toBeInstanceOf(PortDoubleInitError);
-    });
+      expect(error.name).toBe('DoublePortInitError')
+      expect(error.message).toBe('')
+    })
 
     it('should handle long messages', () => {
-      const longMessage = 'A'.repeat(1000);
-      const error = new PortDoubleInitError(longMessage);
+      const longMessage = 'Port initialization error: ' + 'a'.repeat(1000)
+      const error = new PortDoubleInitError(longMessage)
 
-      expect(error.message).toBe(longMessage);
-      expect(error.message.length).toBe(1000);
-    });
+      expect(error.message).toBe(longMessage)
+      expect(error.message.length).toBe(1027)
+    })
 
-    it('should preserve instanceof after being thrown', () => {
-      let caughtError: unknown = null;
+    it('should maintain correct prototype chain', () => {
+      const error = new PortDoubleInitError('test')
 
-      try {
-        throw new PortDoubleInitError('double init');
-      } catch (error) {
-        caughtError = error;
+      expect(Object.getPrototypeOf(error)).toBe(PortDoubleInitError.prototype)
+      expect(error instanceof PortDoubleInitError).toBe(true)
+      expect(error instanceof Error).toBe(true)
+    })
+
+    it('should preserve stack trace', () => {
+      function throwError() {
+        throw new PortDoubleInitError('Double init detected')
       }
 
-      expect(caughtError).toBeInstanceOf(PortDoubleInitError);
-      expect(caughtError).toBeInstanceOf(Error);
-    });
-  });
+      expect(() => throwError()).toThrow(PortDoubleInitError)
+
+      try {
+        throwError()
+      } catch (error) {
+        if (error instanceof PortDoubleInitError) {
+          expect(error.stack).toContain('throwError')
+        }
+      }
+    })
+  })
 
   describe('WorkerDoubleInitError', () => {
-    it('should create an instance with correct message', () => {
-      const message = 'Worker already initialized';
-      const error = new WorkerDoubleInitError(message);
+    it('should create a WorkerDoubleInitError with correct name and message', () => {
+      const message = 'Worker has already been initialized'
+      const error = new WorkerDoubleInitError(message)
 
-      expect(error.message).toBe(message);
-      expect(error.name).toBe('WorkerDoubleInitError');
-      expect(error).toBeInstanceOf(WorkerDoubleInitError);
-      expect(error).toBeInstanceOf(Error);
-    });
-
-    it('should maintain proper prototype chain', () => {
-      const error = new WorkerDoubleInitError('test message');
-
-      expect(Object.getPrototypeOf(error)).toBe(WorkerDoubleInitError.prototype);
-      expect(error.constructor).toBe(WorkerDoubleInitError);
-    });
-
-    it('should work with instanceof checks in try-catch', () => {
-      try {
-        throw new WorkerDoubleInitError('worker error');
-      } catch (error) {
-        expect(error).toBeInstanceOf(WorkerDoubleInitError);
-        expect(error).toBeInstanceOf(Error);
-        expect((error as WorkerDoubleInitError).name).toBe('WorkerDoubleInitError');
-      }
-    });
-
-    it('should handle multiline error messages', () => {
-      const multilineMessage =
-        'Worker initialization failed:\n- Port already in use\n- Cannot start twice';
-      const error = new WorkerDoubleInitError(multilineMessage);
-
-      expect(error.message).toBe(multilineMessage);
-      expect(error.message.includes('\n')).toBe(true);
-    });
-  });
-
-  describe('TestOnlyError', () => {
-    it('should create an instance with correct message', () => {
-      const message = 'This is a test-only error';
-      const error = new TestOnlyError(message);
-
-      expect(error.message).toBe(message);
-      expect(error.name).toBe('TestOnlyError');
-      expect(error).toBeInstanceOf(TestOnlyError);
-      expect(error).toBeInstanceOf(Error);
-    });
-
-    it('should maintain proper prototype chain', () => {
-      const error = new TestOnlyError('test message');
-
-      expect(Object.getPrototypeOf(error)).toBe(TestOnlyError.prototype);
-      expect(error.constructor).toBe(TestOnlyError);
-    });
-
-    it('should be serializable for logging purposes', () => {
-      const message = 'Test error for serialization';
-      const error = new TestOnlyError(message);
-
-      const serialized = JSON.stringify({
-        name: error.name,
-        message: error.message,
-        stack: error.stack?.split('\n')[0],
-      });
-
-      const parsed = JSON.parse(serialized);
-      expect(parsed.name).toBe('TestOnlyError');
-      expect(parsed.message).toBe(message);
-    });
-
-    it('should handle test scenario messages', () => {
-      const testMessages = [
-        'Mock failed to initialize',
-        'Test fixture setup error',
-        'Assertion helper failure',
-      ];
-
-      testMessages.forEach((message) => {
-        const error = new TestOnlyError(message);
-        expect(error.message).toBe(message);
-        expect(error.name).toBe('TestOnlyError');
-      });
-    });
-  });
-
-  describe('AbsentPortDisconnectionError', () => {
-    it('should create an instance with correct message', () => {
-      const message = 'Cannot disconnect absent port';
-      const error = new AbsentPortDisconnectionError(message);
-
-      expect(error.message).toBe(message);
-      expect(error.name).toBe('AbsentPortDisconnectionError');
-      expect(error).toBeInstanceOf(AbsentPortDisconnectionError);
-      expect(error).toBeInstanceOf(Error);
-    });
-
-    it('should maintain proper prototype chain', () => {
-      const error = new AbsentPortDisconnectionError('test message');
-
-      expect(Object.getPrototypeOf(error)).toBe(AbsentPortDisconnectionError.prototype);
-      expect(error.constructor).toBe(AbsentPortDisconnectionError);
-    });
-
-    it('should handle null and undefined messages gracefully', () => {
-      // TypeScript should prevent this, but test runtime behavior
-      const errorWithNull = new AbsentPortDisconnectionError(null as unknown as string);
-      const errorWithUndefined = new AbsentPortDisconnectionError(undefined as unknown as string);
-
-      expect(errorWithNull.name).toBe('AbsentPortDisconnectionError');
-      expect(errorWithUndefined.name).toBe('AbsentPortDisconnectionError');
-    });
-
-    it('should handle port identification in messages', () => {
-      const portId = 'port-123';
-      const message = `Cannot disconnect port ${portId}: port does not exist`;
-      const error = new AbsentPortDisconnectionError(message);
-
-      expect(error.message).toContain(portId);
-      expect(error.message).toContain('disconnect');
-    });
-  });
-
-  describe('Error inheritance and polymorphism', () => {
-    it('should allow polymorphic error handling', () => {
-      const errors: Error[] = [
-        new NoPortsError('no ports'),
-        new PortDoubleInitError('double init'),
-        new WorkerDoubleInitError('worker double init'),
-        new TestOnlyError('test only'),
-        new AbsentPortDisconnectionError('absent port'),
-      ];
-
-      errors.forEach((error) => {
-        expect(error).toBeInstanceOf(Error);
-        expect(typeof error.message).toBe('string');
-        expect(typeof error.name).toBe('string');
-        expect(error.stack).toBeDefined();
-      });
-    });
-
-    it('should maintain unique error names', () => {
-      const errorNames = [
-        new NoPortsError('').name,
-        new PortDoubleInitError('').name,
-        new WorkerDoubleInitError('').name,
-        new TestOnlyError('').name,
-        new AbsentPortDisconnectionError('').name,
-      ];
-
-      const uniqueNames = new Set(errorNames);
-      expect(uniqueNames.size).toBe(errorNames.length);
-    });
-
-    it('should work with error filtering by type', () => {
-      const errors = [
-        new NoPortsError('no ports'),
-        new Error('regular error'),
-        new PortDoubleInitError('double init'),
-        new TypeError('type error'),
-        new WorkerDoubleInitError('worker error'),
-      ];
-
-      const customErrors = errors.filter(
-        (error) =>
-          error instanceof NoPortsError ||
-          error instanceof PortDoubleInitError ||
-          error instanceof WorkerDoubleInitError ||
-          error instanceof TestOnlyError ||
-          error instanceof AbsentPortDisconnectionError
-      );
-
-      expect(customErrors).toHaveLength(3);
-      expect(customErrors[0]).toBeInstanceOf(NoPortsError);
-      expect(customErrors[1]).toBeInstanceOf(PortDoubleInitError);
-      expect(customErrors[2]).toBeInstanceOf(WorkerDoubleInitError);
-    });
-
-    it('should work with switch statements on error names', () => {
-      const errors = [
-        new NoPortsError('no ports'),
-        new PortDoubleInitError('double init'),
-        new WorkerDoubleInitError('worker error'),
-      ];
-
-      const errorTypes: string[] = [];
-
-      errors.forEach((error) => {
-        switch (error.name) {
-          case 'NoPortsError':
-            errorTypes.push('ports');
-            break;
-          case 'DoublePortInitError':
-            errorTypes.push('port-init');
-            break;
-          case 'WorkerDoubleInitError':
-            errorTypes.push('worker-init');
-            break;
-          default:
-            errorTypes.push('unknown');
-        }
-      });
-
-      expect(errorTypes).toEqual(['ports', 'port-init', 'worker-init']);
-    });
-  });
-
-  describe('Error creation edge cases', () => {
-    it('should handle numeric string messages', () => {
-      const numericMessage = '12345';
-      const error = new NoPortsError(numericMessage);
-
-      expect(error.message).toBe(numericMessage);
-    });
-
-    it('should handle boolean-like messages', () => {
-      const booleanMessage = 'true';
-      const error = new TestOnlyError(booleanMessage);
-
-      expect(error.message).toBe(booleanMessage);
-    });
+      expect(error).toBeInstanceOf(Error)
+      expect(error).toBeInstanceOf(WorkerDoubleInitError)
+      expect(error.name).toBe('WorkerDoubleInitError')
+      expect(error.message).toBe(message)
+      expect(error.stack).toBeDefined()
+    })
 
     it('should handle multiline messages', () => {
-      const multilineMessage = 'Line 1\nLine 2\nLine 3';
-      const error = new WorkerDoubleInitError(multilineMessage);
+      const message = 'Worker double initialization:\nLine 1\nLine 2'
+      const error = new WorkerDoubleInitError(message)
 
-      expect(error.message).toBe(multilineMessage);
-      expect(error.message.split('\n')).toHaveLength(3);
-    });
+      expect(error.message).toBe(message)
+      expect(error.message).toContain('\n')
+    })
 
-    it('should handle messages with tabs and special whitespace', () => {
-      const specialMessage = '\t\r\n  Special\u00A0message  \t';
-      const error = new AbsentPortDisconnectionError(specialMessage);
+    it('should handle Unicode characters', () => {
+      const message = 'Worker error: 初期化エラー'
+      const error = new WorkerDoubleInitError(message)
 
-      expect(error.message).toBe(specialMessage);
-    });
+      expect(error.message).toBe(message)
+    })
 
-    it('should handle very long messages', () => {
-      const longMessage = 'Very long error message: ' + 'x'.repeat(5000);
-      const error = new PortDoubleInitError(longMessage);
+    it('should maintain correct prototype chain', () => {
+      const error = new WorkerDoubleInitError('test')
 
-      expect(error.message).toBe(longMessage);
-      expect(error.message.length).toBeGreaterThan(5000);
-    });
+      expect(Object.getPrototypeOf(error)).toBe(WorkerDoubleInitError.prototype)
+      expect(error instanceof WorkerDoubleInitError).toBe(true)
+      expect(error instanceof Error).toBe(true)
+    })
 
-    it('should handle unicode and emoji in messages', () => {
-      const unicodeMessage = '🚨 港口错误: ポートエラー 🔥';
-      const error = new NoPortsError(unicodeMessage);
+    it('should be distinguishable from other error types', () => {
+      const workerError = new WorkerDoubleInitError('worker error')
+      const portError = new PortDoubleInitError('port error')
 
-      expect(error.message).toBe(unicodeMessage);
-    });
-  });
+      expect(workerError.name).toBe('WorkerDoubleInitError')
+      expect(portError.name).toBe('DoublePortInitError')
+      expect(workerError.name).not.toBe(portError.name)
+    })
+  })
 
-  describe('Error toString and display behavior', () => {
-    it('should have proper toString representation', () => {
-      const message = 'Test error message';
-      const error = new NoPortsError(message);
+  describe('TestOnlyError', () => {
+    it('should create a TestOnlyError with correct name and message', () => {
+      const message = 'This error should only occur in tests'
+      const error = new TestOnlyError(message)
 
-      const toString = error.toString();
-      expect(toString).toContain('NoPortsError');
-      expect(toString).toContain(message);
-    });
+      expect(error).toBeInstanceOf(Error)
+      expect(error).toBeInstanceOf(TestOnlyError)
+      expect(error.name).toBe('TestOnlyError')
+      expect(error.message).toBe(message)
+      expect(error.stack).toBeDefined()
+    })
 
-    it('should work with console.log-like operations', () => {
-      const error = new PortDoubleInitError('Console test');
+    it('should handle null-like message values', () => {
+      const error = new TestOnlyError('null')
 
-      expect(() => String(error)).not.toThrow();
-      expect(String(error)).toContain('DoublePortInitError');
-    });
+      expect(error.message).toBe('null')
+      expect(error.name).toBe('TestOnlyError')
+    })
 
-    it('should maintain error display consistency', () => {
-      const message = 'Consistent error message';
-      const errors = [
-        new NoPortsError(message),
-        new PortDoubleInitError(message),
-        new WorkerDoubleInitError(message),
-        new TestOnlyError(message),
-        new AbsentPortDisconnectionError(message),
-      ];
+    it('should handle numeric strings in message', () => {
+      const message = '123456'
+      const error = new TestOnlyError(message)
 
-      errors.forEach((error) => {
-        const stringified = String(error);
-        expect(stringified).toContain(error.name);
-        expect(stringified).toContain(message);
-      });
-    });
-  });
+      expect(error.message).toBe(message)
+    })
 
-  describe('Error integration scenarios', () => {
-    it('should work in async/await error handling', async () => {
-      const asyncFunction = async (): Promise<never> => {
-        throw new WorkerDoubleInitError('Async worker error');
-      };
+    it('should maintain correct prototype chain', () => {
+      const error = new TestOnlyError('test')
 
-      await expect(asyncFunction()).rejects.toThrow(WorkerDoubleInitError);
-      await expect(asyncFunction()).rejects.toThrow('Async worker error');
-    });
+      expect(Object.getPrototypeOf(error)).toBe(TestOnlyError.prototype)
+      expect(error instanceof TestOnlyError).toBe(true)
+      expect(error instanceof Error).toBe(true)
+    })
 
-    it('should work in Promise rejection scenarios', () => {
-      const promise = Promise.reject(new PortDoubleInitError('Promise rejection'));
-      return expect(promise).rejects.toBeInstanceOf(PortDoubleInitError);
-    });
-
-    it('should maintain error context through re-throwing', () => {
-      let finalError: Error | null = null;
-
-      try {
-        throw new NoPortsError('Original error');
-      } catch (error) {
-        finalError = error as Error;
+    it('should work correctly in async contexts', async () => {
+      const createAsyncError = async () => {
+        return new TestOnlyError('async test error')
       }
 
-      expect(finalError).toBeInstanceOf(NoPortsError);
-      expect(finalError?.message).toBe('Original error');
-    });
+      const error = await createAsyncError()
 
-    it('should work with error aggregation patterns', () => {
-      const errors = [
-        new NoPortsError('Error 1'),
-        new PortDoubleInitError('Error 2'),
-        new WorkerDoubleInitError('Error 3'),
-      ];
+      expect(error).toBeInstanceOf(TestOnlyError)
+      expect(error.message).toBe('async test error')
+    })
+  })
 
-      const aggregatedMessage = errors.map((e) => e.message).join('; ');
-      const aggregatedError = new TestOnlyError(aggregatedMessage);
+  describe('AbsentPortDisconnectionError', () => {
+    it('should create an AbsentPortDisconnectionError with correct name and message', () => {
+      const message = 'Attempted to disconnect a port that does not exist'
+      const error = new AbsentPortDisconnectionError(message)
 
-      expect(aggregatedError.message).toBe('Error 1; Error 2; Error 3');
-    });
-  });
-});
+      expect(error).toBeInstanceOf(Error)
+      expect(error).toBeInstanceOf(AbsentPortDisconnectionError)
+      expect(error.name).toBe('AbsentPortDisconnectionError')
+      expect(error.message).toBe(message)
+      expect(error.stack).toBeDefined()
+    })
+
+    it('should handle complex error messages with details', () => {
+      const message = 'Port "worker-123" not found in registry during disconnection attempt'
+      const error = new AbsentPortDisconnectionError(message)
+
+      expect(error.message).toBe(message)
+    })
+
+    it('should handle messages with special formatting', () => {
+      const message = 'Port disconnection failed:\n  - Port ID: missing\n  - Status: not_found'
+      const error = new AbsentPortDisconnectionError(message)
+
+      expect(error.message).toBe(message)
+    })
+
+    it('should maintain correct prototype chain', () => {
+      const error = new AbsentPortDisconnectionError('test')
+
+      expect(Object.getPrototypeOf(error)).toBe(AbsentPortDisconnectionError.prototype)
+      expect(error instanceof AbsentPortDisconnectionError).toBe(true)
+      expect(error instanceof Error).toBe(true)
+    })
+
+    it('should be catchable in try-catch blocks', () => {
+      let caughtError: Error | null = null
+
+      try {
+        throw new AbsentPortDisconnectionError('test disconnection error')
+      } catch (error) {
+        caughtError = error as Error
+      }
+
+      expect(caughtError).toBeInstanceOf(AbsentPortDisconnectionError)
+      expect(caughtError?.message).toBe('test disconnection error')
+    })
+  })
+})
+
+describe('Error Inheritance and Type Safety', () => {
+  it('should maintain proper inheritance hierarchy for all error types', () => {
+    const errors = [
+      new NoPortsError('no ports'),
+      new PortDoubleInitError('port double init'),
+      new WorkerDoubleInitError('worker double init'),
+      new TestOnlyError('test only'),
+      new AbsentPortDisconnectionError('absent port')
+    ]
+
+    errors.forEach(error => {
+      expect(error instanceof Error).toBe(true)
+      expect(error.name).toBeTruthy()
+      expect(error.message).toBeTruthy()
+      expect(error.stack).toBeDefined()
+    })
+  })
+
+  it('should have unique names for each error type', () => {
+    const errorNames = [
+      new NoPortsError('test').name,
+      new PortDoubleInitError('test').name,
+      new WorkerDoubleInitError('test').name,
+      new TestOnlyError('test').name,
+      new AbsentPortDisconnectionError('test').name
+    ]
+
+    const uniqueNames = new Set(errorNames)
+    expect(uniqueNames.size).toBe(errorNames.length)
+  })
+
+  it('should allow proper type checking with instanceof', () => {
+    const noPortsError = new NoPortsError('test')
+    const portDoubleError = new PortDoubleInitError('test')
+
+    expect(noPortsError instanceof NoPortsError).toBe(true)
+    expect(noPortsError instanceof PortDoubleInitError).toBe(false)
+    expect(portDoubleError instanceof PortDoubleInitError).toBe(true)
+    expect(portDoubleError instanceof NoPortsError).toBe(false)
+  })
+
+  it('should work correctly with Error.prototype methods', () => {
+    const error = new TestOnlyError('test error')
+
+    expect(error.toString()).toContain('TestOnlyError')
+    expect(error.toString()).toContain('test error')
+    expect(typeof error.valueOf()).toBe('object')
+  })
+})
+
+describe('Error Scenarios and Edge Cases', () => {
+  it('should handle extremely long messages without issues', () => {
+    const veryLongMessage = 'Error: ' + 'x'.repeat(100000)
+    const error = new NoPortsError(veryLongMessage)
+
+    expect(error.message.length).toBe(100007)
+    expect(error.name).toBe('NoPortsError')
+  })
+
+  it('should work with Object.assign and spread operations', () => {
+    const message = 'original message'
+    const error = new WorkerDoubleInitError(message)
+
+    const copied = Object.assign({ name: error.name, message: error.message }, error)
+
+    expect(copied.name).toBe('WorkerDoubleInitError')
+    expect(copied.message).toBe(message)
+  })
+
+  it('should maintain identity after serialization/deserialization cycles', () => {
+    const originalError = new AbsentPortDisconnectionError('serialization test')
+
+    const serialized = JSON.stringify(originalError, ['name', 'message'])
+    const deserialized = JSON.parse(serialized)
+
+    expect(deserialized.name).toBe('AbsentPortDisconnectionError')
+    expect(deserialized.message).toBe('serialization test')
+  })
+
+  it('should handle concurrent error creation without issues', async () => {
+    const createErrors = async (count: number) => {
+      const promises = Array.from({ length: count }, (_, i) =>
+        Promise.resolve(new TestOnlyError(`concurrent error ${i}`))
+      )
+      return Promise.all(promises)
+    }
+
+    const errors = await createErrors(50)
+
+    expect(errors.length).toBe(50)
+    errors.forEach((error, index) => {
+      expect(error.message).toBe(`concurrent error ${index}`)
+      expect(error instanceof TestOnlyError).toBe(true)
+    })
+  })
+
+  it('should work correctly when extended further', () => {
+    class CustomNoPortsError extends NoPortsError {
+      public readonly code: string
+
+      constructor(message: string, code: string) {
+        super(message)
+        this.name = 'CustomNoPortsError'
+        this.code = code
+        Object.setPrototypeOf(this, CustomNoPortsError.prototype)
+      }
+    }
+
+    const customError = new CustomNoPortsError('custom message', 'ERR001')
+
+    expect(customError instanceof CustomNoPortsError).toBe(true)
+    expect(customError instanceof NoPortsError).toBe(true)
+    expect(customError instanceof Error).toBe(true)
+    expect(customError.name).toBe('CustomNoPortsError')
+    expect(customError.code).toBe('ERR001')
+  })
+})
+
+describe('Integration with Error Handling Patterns', () => {
+  it('should work with Promise.reject and async/await error handling', async () => {
+    const asyncFunction = async (shouldFail: boolean) => {
+      if (shouldFail) {
+        throw new PortDoubleInitError('Async port init failure')
+      }
+      return 'success'
+    }
+
+    await expect(asyncFunction(true)).rejects.toThrow(PortDoubleInitError)
+    await expect(asyncFunction(true)).rejects.toThrow('Async port init failure')
+    await expect(asyncFunction(false)).resolves.toBe('success')
+  })
+
+  it('should work with error aggregation patterns', () => {
+    const errors: Error[] = [
+      new NoPortsError('No ports available'),
+      new WorkerDoubleInitError('Worker already initialized'),
+      new TestOnlyError('Test failure')
+    ]
+
+    const errorMessages = errors.map(e => e.message)
+    const errorNames = errors.map(e => e.name)
+
+    expect(errorMessages).toContain('No ports available')
+    expect(errorMessages).toContain('Worker already initialized')
+    expect(errorMessages).toContain('Test failure')
+
+    expect(errorNames).toContain('NoPortsError')
+    expect(errorNames).toContain('WorkerDoubleInitError')
+    expect(errorNames).toContain('TestOnlyError')
+  })
+
+  it('should maintain proper behavior when used in event handlers', () => {
+    const errorHandler = (error: Error) => {
+      if (error instanceof AbsentPortDisconnectionError) {
+        return 'handled disconnection error'
+      }
+      return 'unknown error'
+    }
+
+    const disconnectionError = new AbsentPortDisconnectionError('port not found')
+    const genericError = new Error('generic error')
+
+    expect(errorHandler(disconnectionError)).toBe('handled disconnection error')
+    expect(errorHandler(genericError)).toBe('unknown error')
+  })
+})

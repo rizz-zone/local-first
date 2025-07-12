@@ -1,5 +1,4 @@
 import { vi, beforeEach, describe, expect, it } from 'vitest'
-import { sharedWorkerEntrypoint } from './shared_worker'
 import { WorkerDoubleInitError } from '../../../../common/errors'
 import { portManager } from '../../helpers/port_manager'
 import { importUnique } from '../../../../testing/dynamic_import'
@@ -16,29 +15,34 @@ describe("SharedWorker entrypoint", () => {
 			expect(initSpy).not.toBeCalled()
 		})
 
-		it("calls portManager.init when invoked", () => {
+		it("calls portManager.init when invoked", async () => {
+			const { sharedWorkerEntrypoint } = await importUnique("./shared_worker")
 			sharedWorkerEntrypoint()
 			expect(initSpy).toHaveBeenCalledOnce()
 		})
 
-		it("calls portManager.init with no arguments", () => {
+		it("calls portManager.init with no arguments", async () => {
+			const { sharedWorkerEntrypoint } = await importUnique("./shared_worker")
 			sharedWorkerEntrypoint()
 			expect(initSpy).toHaveBeenCalledWith()
 		})
 
-		it("returns undefined on successful execution", () => {
+		it("returns undefined on successful execution", async () => {
+			const { sharedWorkerEntrypoint } = await importUnique("./shared_worker")
 			const result = sharedWorkerEntrypoint()
 			expect(result).toBeUndefined()
 		})
 
-		it("executes synchronously", () => {
+		it("executes synchronously", async () => {
+			const { sharedWorkerEntrypoint } = await importUnique("./shared_worker")
 			const before = Date.now()
 			sharedWorkerEntrypoint()
 			const after = Date.now()
 			expect(after - before).toBeLessThan(10) // Should complete very quickly
 		})
 
-		it("works with TypeScript generic parameter", () => {
+		it("works with TypeScript generic parameter", async () => {
+			const { sharedWorkerEntrypoint } = await importUnique("./shared_worker")
 			expect(() => sharedWorkerEntrypoint<unknown>()).not.toThrow()
 		})
 	})

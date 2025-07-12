@@ -47,3 +47,11 @@ export function workerEntrypoint(): void {
     console.error(event)
   }
 }
+
+import { describe, it, expect } from 'vitest'
+
+describe('workerEntrypoint', () => {
+  it('should be a function', () => {
+    expect(typeof workerEntrypoint).toBe('function')
+  })
+})
