@@ -2,663 +2,420 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { BrowserLocalFirst } from './browser'
 import { DB_NAME, SOCKET_URL } from '../../../testing/constants'
 import {
-	type UpstreamWorkerMessage,
-	UpstreamWorkerMessageType
+  type UpstreamWorkerMessage,
+  UpstreamWorkerMessageType
 } from '../../../types/messages/worker/UpstreamWorkerMessage'
 import type { TestingTransition } from '../../../testing/transitions'
 import { TransitionImpact } from '../../../types/transitions/Transition'
 
 describe('BrowserLocalFirst', () => {
-	describe('Constructor', () => {
-		let mockWorker: Worker
-		beforeEach(() => {
-			mockWorker = {
-				postMessage: vi.fn()
-			} as unknown as Worker
-		})
-
-		it('should create instance with valid configuration', () => {
-			const instance = new BrowserLocalFirst({
-				dbName: DB_NAME,
-				wsUrl: SOCKET_URL,
-				worker: mockWorker
-			})
-			
-			expect(instance).toBeInstanceOf(BrowserLocalFirst)
-		})
-
-		it('should handle constructor with various dbName values', () => {
-			const testCases = ['test-db', 'db123', 'my_database', 'a']
-			
-			testCases.forEach(dbName => {
-				const instance = new BrowserLocalFirst({
-					dbName,
-					wsUrl: SOCKET_URL,
-					worker: mockWorker
-				})
-				expect(instance).toBeInstanceOf(BrowserLocalFirst)
-			})
-		})
-
-		it('should handle constructor with various wsUrl values', () => {
-			const testCases = [
-				'ws://localhost:3000',
-				'wss://secure.example.com/socket',
-				'ws://127.0.0.1:8080/path',
-				'wss://example.com:443/ws?token=abc123'
-			]
-			
-			testCases.forEach(wsUrl => {
-				const instance = new BrowserLocalFirst({
-					dbName: DB_NAME,
-					wsUrl,
-					worker: mockWorker
-				})
-				expect(instance).toBeInstanceOf(BrowserLocalFirst)
-			})
-		})
-
-		it('should store worker reference internally', () => {
-			const instance = new BrowserLocalFirst({
-				dbName: DB_NAME,
-				wsUrl: SOCKET_URL,
-				worker: mockWorker
-			})
-			
-			// The worker should be accessible internally (though private)
-			expect((instance as any).worker).toBe(mockWorker)
-		})
-	})
-
-	describe('Worker', () => {
-		describe('message posting via .postMessage()', () => {
-			let mockWorker: Worker
-			beforeEach(() => {
-				mockWorker = {
-					postMessage: vi.fn()
-				} as unknown as Worker
-			})
-
-			it('inits', () => {
-				new BrowserLocalFirst({
-					dbName: DB_NAME,
-					wsUrl: SOCKET_URL,
-					worker: mockWorker
-				})
-
-				expect(mockWorker.postMessage).toHaveBeenCalledExactlyOnceWith({
-					type: UpstreamWorkerMessageType.Init,
-					data: {
-						dbName: DB_NAME,
-						wsUrl: SOCKET_URL
-					}
-				} satisfies UpstreamWorkerMessage<TestingTransition>)
-			})
-
-			it('sends transitions', () => {
-				const syncEngine = new BrowserLocalFirst<TestingTransition>({
-					dbName: DB_NAME,
-					wsUrl: SOCKET_URL,
-					worker: mockWorker
-				})
-				syncEngine.transition({
-					action: 'shift_foo_bar',
-					impact: TransitionImpact.LocalOnly
-				})
-
-				expect(mockWorker.postMessage).toHaveBeenLastCalledWith({
-					type: UpstreamWorkerMessageType.Transition,
-					data: {
-						action: 'shift_foo_bar',
-						impact: TransitionImpact.LocalOnly
-					}
-				})
-			})
-
-			it('sends multiple transitions in sequence', () => {
-				const syncEngine = new BrowserLocalFirst<TestingTransition>({
-					dbName: DB_NAME,
-					wsUrl: SOCKET_URL,
-					worker: mockWorker
-				})
-				
-				const transition1 = { action: 'shift_foo_bar', impact: TransitionImpact.LocalOnly }
-				const transition2 = { 
-					action: 3, 
-					impact: TransitionImpact.SomethingElse,
-					data: { foo: 'test', bar: 42 }
-				} as TestingTransition
-
-				syncEngine.transition(transition1)
-				syncEngine.transition(transition2)
-
-				expect(mockWorker.postMessage).toHaveBeenCalledTimes(3) // 1 init + 2 transitions
-
-				expect(mockWorker.postMessage).toHaveBeenNthCalledWith(2, {
-					type: UpstreamWorkerMessageType.Transition,
-					data: transition1
-				})
-
-				expect(mockWorker.postMessage).toHaveBeenNthCalledWith(3, {
-					type: UpstreamWorkerMessageType.Transition,
-					data: transition2
-				})
-			})
-
-			it('handles worker postMessage errors during initialization', () => {
-				const failingWorker = {
-					postMessage: vi.fn().mockImplementation(() => {
-						throw new Error('Worker communication failed')
-					})
-				} as unknown as Worker
-
-				expect(() => {
-					new BrowserLocalFirst({
-						dbName: DB_NAME,
-						wsUrl: SOCKET_URL,
-						worker: failingWorker
-					})
-				}).toThrow('Worker communication failed')
-			})
-
-			it('handles worker postMessage errors during transition', () => {
-				const syncEngine = new BrowserLocalFirst<TestingTransition>({
-					dbName: DB_NAME,
-					wsUrl: SOCKET_URL,
-					worker: mockWorker
-				})
-
-				// Make postMessage fail on subsequent calls
-				mockWorker.postMessage = vi.fn().mockImplementation(() => {
-					throw new Error('Transition failed')
-				})
-
-				expect(() => {
-					syncEngine.transition({
-						action: 'shift_foo_bar',
-						impact: TransitionImpact.LocalOnly
-					})
-				}).toThrow('Transition failed')
-			})
-
-			it('handles transition with SomethingElse impact and data', () => {
-				const syncEngine = new BrowserLocalFirst<TestingTransition>({
-					dbName: DB_NAME,
-					wsUrl: SOCKET_URL,
-					worker: mockWorker
-				})
-				
-				const complexTransition = {
-					action: 3,
-					impact: TransitionImpact.SomethingElse,
-					data: { foo: 'hello', bar: 123 }
-				} as TestingTransition
-
-				syncEngine.transition(complexTransition)
-
-				expect(mockWorker.postMessage).toHaveBeenLastCalledWith({
-					type: UpstreamWorkerMessageType.Transition,
-					data: complexTransition
-				})
-			})
-
-			it('preserves exact transition data structure', () => {
-				const syncEngine = new BrowserLocalFirst<TestingTransition>({
-					dbName: DB_NAME,
-					wsUrl: SOCKET_URL,
-					worker: mockWorker
-				})
-
-				const originalTransition = {
-					action: 3,
-					impact: TransitionImpact.SomethingElse,
-					data: {
-						foo: 'test_value',
-						bar: 999
-					}
-				} as TestingTransition
-
-				syncEngine.transition(originalTransition)
-
-				const lastCall = (mockWorker.postMessage as any).mock.calls[1][0]
-				expect(lastCall.data).toEqual(originalTransition)
-				expect(lastCall.data).not.toBe(originalTransition) // Should not be the exact same reference
-			})
-
-			it('maintains correct message types', () => {
-				const syncEngine = new BrowserLocalFirst<TestingTransition>({
-					dbName: DB_NAME,
-					wsUrl: SOCKET_URL,
-					worker: mockWorker
-				})
-
-				syncEngine.transition({
-					action: 'shift_foo_bar',
-					impact: TransitionImpact.LocalOnly
-				})
-
-				const calls = (mockWorker.postMessage as any).mock.calls
-				expect(calls[0][0].type).toBe(UpstreamWorkerMessageType.Init)
-				expect(calls[1][0].type).toBe(UpstreamWorkerMessageType.Transition)
-			})
-
-			it('handles rapid successive transitions', () => {
-				const syncEngine = new BrowserLocalFirst<TestingTransition>({
-					dbName: DB_NAME,
-					wsUrl: SOCKET_URL,
-					worker: mockWorker
-				})
-
-				const rapidTransitions = Array.from({ length: 50 }, (_, i) => ({
-					action: 'shift_foo_bar',
-					impact: TransitionImpact.LocalOnly
-				})) as TestingTransition[]
-
-				rapidTransitions.forEach(transition => {
-					syncEngine.transition(transition)
-				})
-
-				expect(mockWorker.postMessage).toHaveBeenCalledTimes(51) // 1 init + 50 transitions
-			})
-		})
-	})
-
-	describe('SharedWorker', () => {
-		describe('message posting via .port.postMessage()', () => {
-			type TestingSharedWorker = SharedWorker & {
-				postMessage: Worker['postMessage']
-			}
-			let mockWorker: TestingSharedWorker
-			beforeEach(() => {
-				mockWorker = {
-					port: { postMessage: vi.fn() },
-					postMessage: vi.fn()
-				} as unknown as TestingSharedWorker
-			})
-
-			it('inits', () => {
-				new BrowserLocalFirst({
-					dbName: DB_NAME,
-					wsUrl: SOCKET_URL,
-					worker: mockWorker
-				})
-
-				expect(mockWorker.port.postMessage).toHaveBeenCalledExactlyOnceWith({
-					type: UpstreamWorkerMessageType.Init,
-					data: {
-						dbName: DB_NAME,
-						wsUrl: SOCKET_URL
-					}
-				} satisfies UpstreamWorkerMessage<TestingTransition>)
-				expect(mockWorker.postMessage).not.toBeCalled()
-			})
-
-			it('sends transitions', () => {
-				const syncEngine = new BrowserLocalFirst<TestingTransition>({
-					dbName: DB_NAME,
-					wsUrl: SOCKET_URL,
-					worker: mockWorker
-				})
-				syncEngine.transition({
-					action: 'shift_foo_bar',
-					impact: TransitionImpact.LocalOnly
-				})
-
-				expect(mockWorker.port.postMessage).toHaveBeenLastCalledWith({
-					type: UpstreamWorkerMessageType.Transition,
-					data: {
-						action: 'shift_foo_bar',
-						impact: TransitionImpact.LocalOnly
-					}
-				})
-				expect(mockWorker.postMessage).not.toBeCalled()
-			})
-
-			it('handles SharedWorker port postMessage errors during initialization', () => {
-				const failingSharedWorker = {
-					port: {
-						postMessage: vi.fn().mockImplementation(() => {
-							throw new Error('SharedWorker port communication failed')
-						})
-					},
-					postMessage: vi.fn()
-				} as unknown as TestingSharedWorker
-
-				expect(() => {
-					new BrowserLocalFirst({
-						dbName: DB_NAME,
-						wsUrl: SOCKET_URL,
-						worker: failingSharedWorker
-					})
-				}).toThrow('SharedWorker port communication failed')
-			})
-
-			it('handles SharedWorker port postMessage errors during transition', () => {
-				const syncEngine = new BrowserLocalFirst<TestingTransition>({
-					dbName: DB_NAME,
-					wsUrl: SOCKET_URL,
-					worker: mockWorker
-				})
-
-				// Make port.postMessage fail on subsequent calls
-				mockWorker.port.postMessage = vi.fn().mockImplementation(() => {
-					throw new Error('Port transition failed')
-				})
-
-				expect(() => {
-					syncEngine.transition({
-						action: 'shift_foo_bar',
-						impact: TransitionImpact.LocalOnly
-					})
-				}).toThrow('Port transition failed')
-			})
-
-			it('sends multiple transitions without calling worker.postMessage', () => {
-				const syncEngine = new BrowserLocalFirst<TestingTransition>({
-					dbName: DB_NAME,
-					wsUrl: SOCKET_URL,
-					worker: mockWorker
-				})
-				
-				const transitions = [
-					{ action: 'shift_foo_bar', impact: TransitionImpact.LocalOnly },
-					{ action: 3, impact: TransitionImpact.SomethingElse, data: { foo: 'test', bar: 1 } }
-				] as TestingTransition[]
-
-				transitions.forEach(transition => {
-					syncEngine.transition(transition)
-				})
-
-				expect(mockWorker.port.postMessage).toHaveBeenCalledTimes(3) // 1 init + 2 transitions
-				expect(mockWorker.postMessage).not.toHaveBeenCalled()
-			})
-
-			it('correctly routes all messages through port for SharedWorker', () => {
-				const syncEngine = new BrowserLocalFirst<TestingTransition>({
-					dbName: DB_NAME,
-					wsUrl: SOCKET_URL,
-					worker: mockWorker
-				})
-
-				// Send multiple different message types
-				syncEngine.transition({ action: 'shift_foo_bar', impact: TransitionImpact.LocalOnly })
-				syncEngine.transition({ 
-					action: 3, 
-					impact: TransitionImpact.SomethingElse, 
-					data: { foo: 'test', bar: 42 } 
-				})
-
-				// All should go through port.postMessage
-				expect(mockWorker.port.postMessage).toHaveBeenCalledTimes(3)
-				expect(mockWorker.postMessage).not.toHaveBeenCalled()
-			})
-		})
-	})
-
-	describe('Worker Detection Logic', () => {
-		it('should correctly identify Worker vs SharedWorker', () => {
-			const regularWorker = {
-				postMessage: vi.fn()
-			} as unknown as Worker
-
-			const sharedWorker = {
-				port: { postMessage: vi.fn() },
-				postMessage: vi.fn()
-			} as unknown as SharedWorker
-
-			// Test regular worker
-			new BrowserLocalFirst({
-				dbName: DB_NAME,
-				wsUrl: SOCKET_URL,
-				worker: regularWorker
-			})
-
-			// Test shared worker  
-			new BrowserLocalFirst({
-				dbName: DB_NAME,
-				wsUrl: SOCKET_URL,
-				worker: sharedWorker
-			})
-
-			expect(regularWorker.postMessage).toHaveBeenCalledOnce()
-			expect(sharedWorker.port.postMessage).toHaveBeenCalledOnce()
-			expect(sharedWorker.postMessage).not.toHaveBeenCalled()
-		})
-
-		it('should handle worker with port property that is not a SharedWorker', () => {
-			const workerWithPort = {
-				postMessage: vi.fn(),
-				port: { postMessage: vi.fn() }
-			} as unknown as SharedWorker
-
-			new BrowserLocalFirst({
-				dbName: DB_NAME,
-				wsUrl: SOCKET_URL,
-				worker: workerWithPort
-			})
-
-			// Should use port.postMessage since 'port' property exists
-			expect(workerWithPort.port.postMessage).toHaveBeenCalledOnce()
-			expect(workerWithPort.postMessage).not.toHaveBeenCalled()
-		})
-
-		it('should handle worker objects with additional properties', () => {
-			const extendedWorker = {
-				postMessage: vi.fn(),
-				terminate: vi.fn(),
-				onmessage: null,
-				onerror: null,
-				addEventListener: vi.fn(),
-				removeEventListener: vi.fn(),
-				customProperty: 'test'
-			} as unknown as Worker
-
-			expect(() => {
-				new BrowserLocalFirst({
-					dbName: DB_NAME,
-					wsUrl: SOCKET_URL,
-					worker: extendedWorker
-				})
-			}).not.toThrow()
-
-			expect(extendedWorker.postMessage).toHaveBeenCalledOnce()
-		})
-	})
-
-	describe('Message Structure Validation', () => {
-		let mockWorker: Worker
-		beforeEach(() => {
-			mockWorker = {
-				postMessage: vi.fn()
-			} as unknown as Worker
-		})
-
-		it('should send init message with correct structure', () => {
-			const customDbName = 'custom-db'
-			const customWsUrl = 'ws://custom.example.com'
-
-			new BrowserLocalFirst({
-				dbName: customDbName,
-				wsUrl: customWsUrl,
-				worker: mockWorker
-			})
-
-			expect(mockWorker.postMessage).toHaveBeenCalledWith({
-				type: UpstreamWorkerMessageType.Init,
-				data: {
-					dbName: customDbName,
-					wsUrl: customWsUrl
-				}
-			})
-		})
-
-		it('should send transition message with correct structure', () => {
-			const syncEngine = new BrowserLocalFirst<TestingTransition>({
-				dbName: DB_NAME,
-				wsUrl: SOCKET_URL,
-				worker: mockWorker
-			})
-
-			const testTransition = {
-				action: 3,
-				impact: TransitionImpact.SomethingElse,
-				data: { foo: 'value', bar: 123 }
-			} as TestingTransition
-
-			syncEngine.transition(testTransition)
-
-			expect(mockWorker.postMessage).toHaveBeenLastCalledWith({
-				type: UpstreamWorkerMessageType.Transition,
-				data: testTransition
-			})
-		})
-
-		it('should preserve all transition properties', () => {
-			const syncEngine = new BrowserLocalFirst<TestingTransition>({
-				dbName: DB_NAME,
-				wsUrl: SOCKET_URL,
-				worker: mockWorker
-			})
-
-			const complexTransition = {
-				action: 3,
-				impact: TransitionImpact.SomethingElse,
-				data: {
-					foo: 'complex_string_with_special_chars_🚀',
-					bar: 999999
-				}
-			} as TestingTransition
-
-			syncEngine.transition(complexTransition)
-
-			const sentMessage = (mockWorker.postMessage as any).mock.calls[1][0]
-			expect(sentMessage.data).toEqual(complexTransition)
-		})
-	})
-
-	describe('Error Boundaries', () => {
-		it('should not catch or suppress worker postMessage errors', () => {
-			const failingWorker = {
-				postMessage: vi.fn().mockImplementation(() => {
-					throw new Error('Intentional failure')
-				})
-			} as unknown as Worker
-
-			expect(() => {
-				new BrowserLocalFirst({
-					dbName: DB_NAME,
-					wsUrl: SOCKET_URL,
-					worker: failingWorker
-				})
-			}).toThrow('Intentional failure')
-		})
-
-		it('should not catch or suppress SharedWorker port postMessage errors', () => {
-			const failingSharedWorker = {
-				port: {
-					postMessage: vi.fn().mockImplementation(() => {
-						throw new Error('SharedWorker failure')
-					})
-				},
-				postMessage: vi.fn()
-			} as unknown as SharedWorker
-
-			expect(() => {
-				new BrowserLocalFirst({
-					dbName: DB_NAME,
-					wsUrl: SOCKET_URL,
-					worker: failingSharedWorker
-				})
-			}).toThrow('SharedWorker failure')
-		})
-
-		it('should propagate transition errors immediately', () => {
-			const mockWorker = {
-				postMessage: vi.fn()
-			} as unknown as Worker
-
-			const syncEngine = new BrowserLocalFirst<TestingTransition>({
-				dbName: DB_NAME,
-				wsUrl: SOCKET_URL,
-				worker: mockWorker
-			})
-
-			// Make the next call fail
-			mockWorker.postMessage = vi.fn().mockImplementation(() => {
-				throw new Error('Transition error')
-			})
-
-			expect(() => {
-				syncEngine.transition({
-					action: 'shift_foo_bar',
-					impact: TransitionImpact.LocalOnly
-				})
-			}).toThrow('Transition error')
-		})
-	})
-
-	describe('Performance and Load Characteristics', () => {
-		it('should handle high-frequency transitions without degradation', () => {
-			const mockWorker = {
-				postMessage: vi.fn()
-			} as unknown as Worker
-
-			const syncEngine = new BrowserLocalFirst<TestingTransition>({
-				dbName: DB_NAME,
-				wsUrl: SOCKET_URL,
-				worker: mockWorker
-			})
-
-			const startTime = performance.now()
-			
-			// Send 1000 transitions rapidly
-			for (let i = 0; i < 1000; i++) {
-				syncEngine.transition({
-					action: 'shift_foo_bar',
-					impact: TransitionImpact.LocalOnly
-				})
-			}
-
-			const endTime = performance.now()
-			const duration = endTime - startTime
-
-			expect(mockWorker.postMessage).toHaveBeenCalledTimes(1001) // 1 init + 1000 transitions
-			expect(duration).toBeLessThan(1000) // Should complete within 1 second
-		})
-
-		it('should maintain consistent behavior across worker types under load', () => {
-			const regularWorker = { postMessage: vi.fn() } as unknown as Worker
-			const sharedWorker = {
-				port: { postMessage: vi.fn() },
-				postMessage: vi.fn()
-			} as unknown as SharedWorker
-
-			const syncEngine1 = new BrowserLocalFirst<TestingTransition>({
-				dbName: DB_NAME,
-				wsUrl: SOCKET_URL,
-				worker: regularWorker
-			})
-
-			const syncEngine2 = new BrowserLocalFirst<TestingTransition>({
-				dbName: DB_NAME,
-				wsUrl: SOCKET_URL,
-				worker: sharedWorker
-			})
-
-			// Send same sequence to both
-			for (let i = 0; i < 100; i++) {
-				const transition = {
-					action: 'shift_foo_bar',
-					impact: TransitionImpact.LocalOnly
-				} as TestingTransition
-
-				syncEngine1.transition(transition)
-				syncEngine2.transition(transition)
-			}
-
-			expect(regularWorker.postMessage).toHaveBeenCalledTimes(101)
-			expect(sharedWorker.port.postMessage).toHaveBeenCalledTimes(101)
-			expect(sharedWorker.postMessage).not.toHaveBeenCalled()
-		})
-	})
+  describe('Worker', () => {
+    describe('message posting via .postMessage()', () => {
+      let mockWorker: Worker
+
+      beforeEach(() => {
+        mockWorker = {
+          postMessage: vi.fn()
+        } as unknown as Worker
+      })
+
+      it('inits', () => {
+        new BrowserLocalFirst({
+          dbName: DB_NAME,
+          wsUrl: SOCKET_URL,
+          worker: mockWorker
+        })
+
+        expect(mockWorker.postMessage).toHaveBeenCalledExactlyOnceWith({
+          type: UpstreamWorkerMessageType.Init,
+          data: {
+            dbName: DB_NAME,
+            wsUrl: SOCKET_URL
+          }
+        } satisfies UpstreamWorkerMessage<TestingTransition>)
+      })
+
+      it('sends transitions', () => {
+        const syncEngine = new BrowserLocalFirst<TestingTransition>({
+          dbName: DB_NAME,
+          wsUrl: SOCKET_URL,
+          worker: mockWorker
+        })
+        syncEngine.transition({
+          action: 'shift_foo_bar',
+          impact: TransitionImpact.LocalOnly
+        })
+
+        expect(mockWorker.postMessage).toHaveBeenLastCalledWith({
+          type: UpstreamWorkerMessageType.Transition,
+          data: {
+            action: 'shift_foo_bar',
+            impact: TransitionImpact.LocalOnly
+          }
+        })
+      })
+    })
+  })
+
+  describe('SharedWorker', () => {
+    type TestingSharedWorker = SharedWorker & {
+      postMessage: Worker['postMessage']
+    }
+    let mockWorker: TestingSharedWorker
+
+    beforeEach(() => {
+      mockWorker = {
+        port: { postMessage: vi.fn() },
+        postMessage: vi.fn()
+      } as unknown as TestingSharedWorker
+    })
+
+    it('inits', () => {
+      new BrowserLocalFirst({
+        dbName: DB_NAME,
+        wsUrl: SOCKET_URL,
+        worker: mockWorker
+      })
+
+      expect(mockWorker.port.postMessage).toHaveBeenCalledExactlyOnceWith({
+        type: UpstreamWorkerMessageType.Init,
+        data: {
+          dbName: DB_NAME,
+          wsUrl: SOCKET_URL
+        }
+      } satisfies UpstreamWorkerMessage<TestingTransition>)
+      expect(mockWorker.postMessage).not.toBeCalled()
+    })
+
+    it('sends transitions', () => {
+      const syncEngine = new BrowserLocalFirst<TestingTransition>({
+        dbName: DB_NAME,
+        wsUrl: SOCKET_URL,
+        worker: mockWorker
+      })
+      syncEngine.transition({
+        action: 'shift_foo_bar',
+        impact: TransitionImpact.LocalOnly
+      })
+
+      expect(mockWorker.port.postMessage).toHaveBeenLastCalledWith({
+        type: UpstreamWorkerMessageType.Transition,
+        data: {
+          action: 'shift_foo_bar',
+          impact: TransitionImpact.LocalOnly
+        }
+      })
+      expect(mockWorker.postMessage).not.toBeCalled()
+    })
+  })
+
+  describe('Error Handling', () => {
+    describe('Worker', () => {
+      let mockWorker: Worker
+
+      beforeEach(() => {
+        mockWorker = {
+          postMessage: vi.fn()
+        } as unknown as Worker
+      })
+
+      it('handles invalid initialization parameters gracefully', () => {
+        expect(() => {
+          new BrowserLocalFirst({
+            dbName: '',
+            wsUrl: SOCKET_URL,
+            worker: mockWorker
+          })
+        }).not.toThrow()
+
+        expect(() => {
+          new BrowserLocalFirst({
+            dbName: DB_NAME,
+            wsUrl: '',
+            worker: mockWorker
+          })
+        }).not.toThrow()
+      })
+
+      it('handles null/undefined worker gracefully', () => {
+        expect(() => {
+          new BrowserLocalFirst({
+            dbName: DB_NAME,
+            wsUrl: SOCKET_URL,
+            worker: null as unknown as Worker
+          })
+        }).toThrow()
+
+        expect(() => {
+          new BrowserLocalFirst({
+            dbName: DB_NAME,
+            wsUrl: SOCKET_URL,
+            worker: undefined as unknown as Worker
+          })
+        }).toThrow()
+      })
+
+      it('handles postMessage failures gracefully', () => {
+        const failingWorker = {
+          postMessage: vi.fn().mockImplementation(() => {
+            throw new Error('Worker communication failed')
+          })
+        } as unknown as Worker
+
+        expect(() => {
+          new BrowserLocalFirst({
+            dbName: DB_NAME,
+            wsUrl: SOCKET_URL,
+            worker: failingWorker
+          })
+        }).toThrow('Worker communication failed')
+      })
+    })
+
+    describe('SharedWorker', () => {
+      type TestingSharedWorker = SharedWorker & {
+        postMessage: Worker['postMessage']
+      }
+
+      it('handles port.postMessage failures gracefully', () => {
+        const failingSharedWorker = {
+          port: {
+            postMessage: vi.fn().mockImplementation(() => {
+              throw new Error('SharedWorker port communication failed')
+            })
+          },
+          postMessage: vi.fn()
+        } as unknown as TestingSharedWorker
+
+        expect(() => {
+          new BrowserLocalFirst({
+            dbName: DB_NAME,
+            wsUrl: SOCKET_URL,
+            worker: failingSharedWorker
+          })
+        }).toThrow('SharedWorker port communication failed')
+      })
+
+      it('handles missing port gracefully', () => {
+        const invalidSharedWorker = {
+          port: null,
+          postMessage: vi.fn()
+        } as unknown as TestingSharedWorker
+
+        expect(() => {
+          new BrowserLocalFirst({
+            dbName: DB_NAME,
+            wsUrl: SOCKET_URL,
+            worker: invalidSharedWorker
+          })
+        }).toThrow()
+      })
+    })
+  })
+
+  describe('Transition Edge Cases', () => {
+    describe('Worker', () => {
+      let mockWorker: Worker
+      let syncEngine: BrowserLocalFirst<TestingTransition>
+
+      beforeEach(() => {
+        mockWorker = {
+          postMessage: vi.fn()
+        } as unknown as Worker
+        syncEngine = new BrowserLocalFirst<TestingTransition>({
+          dbName: DB_NAME,
+          wsUrl: SOCKET_URL,
+          worker: mockWorker
+        })
+        vi.clearAllMocks()
+      })
+
+      it('handles transition with different impact types', () => {
+        const impacts = [
+          TransitionImpact.LocalOnly,
+          TransitionImpact.SomethingElse
+        ] as const
+
+        impacts.forEach(impact => {
+          syncEngine.transition({
+            action: `test_action_${impact}`,
+            impact
+          })
+
+          expect(mockWorker.postMessage).toHaveBeenLastCalledWith({
+            type: UpstreamWorkerMessageType.Transition,
+            data: {
+              action: `test_action_${impact}`,
+              impact
+            }
+          })
+        })
+
+        expect(mockWorker.postMessage).toHaveBeenCalledTimes(impacts.length)
+      })
+
+      it('handles transition with empty action string', () => {
+        syncEngine.transition({
+          action: '',
+          impact: TransitionImpact.LocalOnly
+        })
+
+        expect(mockWorker.postMessage).toHaveBeenCalledWith({
+          type: UpstreamWorkerMessageType.Transition,
+          data: {
+            action: '',
+            impact: TransitionImpact.LocalOnly
+          }
+        })
+      })
+
+      it('handles transition with numeric action', () => {
+        syncEngine.transition({
+          action: 12345,
+          impact: TransitionImpact.LocalOnly
+        })
+
+        expect(mockWorker.postMessage).toHaveBeenCalledWith({
+          type: UpstreamWorkerMessageType.Transition,
+          data: {
+            action: 12345,
+            impact: TransitionImpact.LocalOnly
+          }
+        })
+      })
+
+      it('handles transition with special characters in action', () => {
+        const specialAction = 'special!@#$%^&*()_+-={}[]|\\:";\'<>?,./action'
+        syncEngine.transition({
+          action: specialAction,
+          impact: TransitionImpact.LocalOnly
+        })
+
+        expect(mockWorker.postMessage).toHaveBeenCalledWith({
+          type: UpstreamWorkerMessageType.Transition,
+          data: {
+            action: specialAction,
+            impact: TransitionImpact.LocalOnly
+          }
+        })
+      })
+
+      it('handles transition with optional data field', () => {
+        const transitionWithData = {
+          action: 'test_with_data',
+          impact: TransitionImpact.LocalOnly,
+          data: { userId: 123, timestamp: Date.now() }
+        }
+
+        syncEngine.transition(transitionWithData)
+
+        expect(mockWorker.postMessage).toHaveBeenCalledWith({
+          type: UpstreamWorkerMessageType.Transition,
+          data: transitionWithData
+        })
+      })
+
+      it('handles multiple rapid transitions', () => {
+        const transitions = [
+          { action: 'action1', impact: TransitionImpact.LocalOnly },
+          { action: 'action2', impact: TransitionImpact.SomethingElse },
+          { action: 'action3', impact: TransitionImpact.LocalOnly }
+        ] as const
+
+        transitions.forEach(transition => {
+          syncEngine.transition(transition)
+        })
+
+        expect(mockWorker.postMessage).toHaveBeenCalledTimes(transitions.length)
+        transitions.forEach((transition, index) => {
+          expect(mockWorker.postMessage).toHaveBeenNthCalledWith(index + 1, {
+            type: UpstreamWorkerMessageType.Transition,
+            data: transition
+          })
+        })
+      })
+
+      it('handles transition when worker.postMessage throws', () => {
+        mockWorker.postMessage = vi.fn().mockImplementation(() => {
+          throw new Error('Worker unavailable')
+        })
+
+        expect(() => {
+          syncEngine.transition({
+            action: 'test_action',
+            impact: TransitionImpact.LocalOnly
+          })
+        }).toThrow('Worker unavailable')
+      })
+    })
+
+    describe('SharedWorker', () => {
+      type TestingSharedWorker = SharedWorker & {
+        postMessage: Worker['postMessage']
+      }
+      let mockWorker: TestingSharedWorker
+      let syncEngine: BrowserLocalFirst<TestingTransition>
+
+      beforeEach(() => {
+        mockWorker = {
+          port: { postMessage: vi.fn() },
+          postMessage: vi.fn()
+        } as unknown as TestingSharedWorker
+        syncEngine = new BrowserLocalFirst<TestingTransition>({
+          dbName: DB_NAME,
+          wsUrl: SOCKET_URL,
+          worker: mockWorker
+        })
+        vi.clearAllMocks()
+      })
+
+      it('handles transition when port.postMessage throws', () => {
+        mockWorker.port.postMessage = vi.fn().mockImplementation(() => {
+          throw new Error('SharedWorker port unavailable')
+        })
+
+        expect(() => {
+          syncEngine.transition({
+            action: 'test_action',
+            impact: TransitionImpact.LocalOnly
+          })
+        }).toThrow('SharedWorker port unavailable')
+      })
+
+      it('ensures regular postMessage is never called during transitions', () => {
+        const transitions = [
+          { action: 'action1', impact: TransitionImpact.LocalOnly },
+          { action: 'action2', impact: TransitionImpact.SomethingElse },
+          { action: 'action3', impact: TransitionImpact.LocalOnly }
+        ] as const
+
+        transitions.forEach(transition => {
+          syncEngine.transition(transition)
+        })
+
+        expect(mockWorker.postMessage).not.toHaveBeenCalled()
+        expect(mockWorker.port.postMessage).toHaveBeenCalledTimes(transitions.length)
+      })
+    })
+  })
+
+  describe('Worker Detection Logic', () => {
+    it('handles objects with port property that are not SharedWorkers', () => {
+      const ambiguousWorker = {
+        port: { postMessage: vi.fn() },
+        postMessage: vi.fn(),
+        someOtherProperty: 'test'
+      } as unknown as Worker | SharedWorker
+
+      new BrowserLocalFirst({
+        dbName: DB_NAME,
+        wsUrl: SOCKET_URL,
+        worker: ambiguousWorker
+      })
+
+      // Should still use port.postMessage since 'port' property exists
+      expect((ambiguousWorker as SharedWorker).port.postMessage).toHaveBeenCalled()
+      expect((ambiguousWorker as Worker).postMessage).not.toHaveBeenCalled()
+    })
+  })
 })
