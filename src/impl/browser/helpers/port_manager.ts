@@ -124,3 +124,5 @@ function init<TransitionSchema extends Transition>() {
 }
 
 export const portManager = { init }
+export const __testing__do_not_use_this_ever_or_you_will_have_a_terrible_time_and_also_cause_probably_pretty_major_and_significant_bugs_and_we_wouldnt_want_that_would_we__WorkerPort =
+	WorkerPort
