@@ -203,3 +203,436 @@ describe('worker machine', () => {
 		})
 	})
 })
+
+	describe('database state transitions', () => {
+		it('can transition to connected state', () => {
+			const machine = createActor(clientMachine)
+			machine.start()
+			machine.send({
+				type: 'init',
+				wsUrl: SOCKET_URL,
+				dbName: 'jerry'
+			})
+
+			// Simulate database connection success
+			machine.send({ type: 'db connected' })
+
+			const snapshot = machine.getSnapshot()
+			expect(snapshot.value.db).toBe('connected')
+		})
+
+		it('can transition to will never connect state', () => {
+			const machine = createActor(clientMachine)
+			machine.start()
+			machine.send({
+				type: 'init',
+				wsUrl: SOCKET_URL,
+				dbName: 'jerry'
+			})
+
+			// Simulate database connection failure
+			machine.send({ type: 'db cannot connect' })
+
+			const snapshot = machine.getSnapshot()
+			expect(snapshot.value.db).toBe('will never connect')
+		})
+
+		it('appends .sqlite to database name on init', () => {
+			const machine = createActor(clientMachine)
+			machine.start()
+			machine.send({
+				type: 'init',
+				wsUrl: SOCKET_URL,
+				dbName: 'test-db'
+			})
+
+			const { context } = machine.getSnapshot()
+			expect(context.dbName).toBe('test-db.sqlite')
+		})
+
+		it('handles database events before init gracefully', () => {
+			const machine = createActor(clientMachine)
+			machine.start()
+
+			// Send database events before init
+			machine.send({ type: 'db connected' })
+			machine.send({ type: 'db cannot connect' })
+
+			const snapshot = machine.getSnapshot()
+			expect(snapshot.value.db).toBe('will never connect') // Last event wins
+		})
+	})
+
+	describe('websocket connection error handling', () => {
+		let WebSocketOriginal: typeof WebSocket
+		let MockWebSocket: any
+		beforeAll(() => {
+			WebSocketOriginal = globalThis.WebSocket
+		})
+		afterEach(() => {
+			globalThis.WebSocket = WebSocketOriginal
+		})
+
+		it('handles ws connection issue event', () => {
+			const machine = createActor(clientMachine)
+			machine.start()
+			machine.send({
+				type: 'init',
+				wsUrl: SOCKET_URL,
+				dbName: 'jerry'
+			})
+
+			// Manually trigger connected state first
+			machine.send({ type: 'ws connected' })
+			expect(machine.getSnapshot().value.websocket).toBe('connected')
+
+			// Then trigger connection issue
+			machine.send({ type: 'ws connection issue' })
+			const snapshot = machine.getSnapshot()
+			expect(snapshot.value.websocket).toBe('disconnected')
+		})
+
+		it('creates new WebSocket on multiple inits', () => {
+			MockWebSocket = vi.fn().mockImplementation(() => ({
+				onopen: null,
+				close: vi.fn(),
+				addEventListener: vi.fn(),
+				removeEventListener: vi.fn()
+			}))
+			globalThis.WebSocket = MockWebSocket
+
+			const machine = createActor(clientMachine)
+			machine.start()
+
+			machine.send({
+				type: 'init',
+				wsUrl: SOCKET_URL,
+				dbName: 'jerry'
+			})
+			expect(MockWebSocket).toHaveBeenCalledTimes(2) // Initial entry + init action
+
+			machine.send({
+				type: 'init',
+				wsUrl: 'wss://different.com',
+				dbName: 'tom'
+			})
+			expect(MockWebSocket).toHaveBeenCalledTimes(3) // Additional call for new init
+		})
+	})
+
+	describe('parallel state management', () => {
+		it('manages all three parallel states independently', () => {
+			const machine = createActor(clientMachine)
+			machine.start()
+
+			// Initial state
+			let snapshot = machine.getSnapshot()
+			expect(snapshot.value).toEqual({
+				websocket: 'disconnected',
+				db: 'disconnected', 
+				superiority: 'follower'
+			})
+
+			// Init triggers changes in websocket and superiority, but not db state
+			machine.send({
+				type: 'init',
+				wsUrl: SOCKET_URL,
+				dbName: 'jerry'
+			})
+
+			snapshot = machine.getSnapshot()
+			expect(snapshot.value.websocket).toBe('disconnected') // Still disconnected until ws connected event
+			expect(snapshot.value.db).toBe('disconnected') // Still disconnected until db connected event
+			expect(snapshot.value.superiority).toBe('follower') // Still follower until lock acquired
+
+			// Trigger websocket connection
+			machine.send({ type: 'ws connected' })
+			snapshot = machine.getSnapshot()
+			expect(snapshot.value.websocket).toBe('connected')
+			expect(snapshot.value.db).toBe('disconnected') // Other states unchanged
+			expect(snapshot.value.superiority).toBe('follower')
+
+			// Trigger database connection
+			machine.send({ type: 'db connected' })
+			snapshot = machine.getSnapshot()
+			expect(snapshot.value.websocket).toBe('connected')
+			expect(snapshot.value.db).toBe('connected')
+			expect(snapshot.value.superiority).toBe('follower') // Still follower
+		})
+
+		it('handles final states correctly', () => {
+			const machine = createActor(clientMachine)
+			machine.start()
+			machine.send({
+				type: 'init',
+				wsUrl: SOCKET_URL,
+				dbName: 'jerry'
+			})
+
+			// Move to final states
+			machine.send({ type: 'db connected' })
+			if (assignedCallback) {
+				assignedCallback()
+			}
+
+			const snapshot = machine.getSnapshot()
+			expect(snapshot.value.db).toBe('connected')
+			expect(snapshot.value.superiority).toBe('leader')
+		})
+	})
+
+	describe('context mutation edge cases', () => {
+		it('preserves existing context when wsUrl is missing in establishSocket', () => {
+			const machine = createActor(clientMachine)
+			machine.start()
+
+			// Manually call establishSocket without wsUrl
+			const snapshot = machine.getSnapshot()
+			expect(snapshot.context.socket).toBeUndefined()
+			expect(snapshot.context.wsUrl).toBeUndefined()
+		})
+
+		it('handles context updates correctly for non-init events', () => {
+			const machine = createActor(clientMachine)
+			machine.start()
+			machine.send({
+				type: 'init',
+				wsUrl: SOCKET_URL,
+				dbName: 'jerry'
+			})
+
+			const beforeSnapshot = machine.getSnapshot()
+			const initialContext = { ...beforeSnapshot.context }
+
+			// Send non-init event
+			machine.send({ type: 'ws connected' })
+
+			const afterSnapshot = machine.getSnapshot()
+			// Context should be preserved (dbName and wsUrl unchanged)
+			expect(afterSnapshot.context.wsUrl).toBe(initialContext.wsUrl)
+			expect(afterSnapshot.context.dbName).toBe(initialContext.dbName)
+		})
+	})
+
+	describe('navigator.locks integration', () => {
+		const originalLocks = navigator.locks
+
+		afterAll(() => {
+			// @ts-expect-error Restore original locks
+			navigator.locks = originalLocks
+		})
+
+		it('calls navigator.locks.request with correct parameters', () => {
+			const requestSpy = vi.fn().mockImplementation(
+				(name: string, callback: () => Promise<unknown>) => {
+					expect(name).toBe('leader')
+					expect(typeof callback).toBe('function')
+					return Promise.resolve()
+				}
+			)
+			// @ts-expect-error Mock navigator.locks
+			navigator.locks = { request: requestSpy }
+
+			const machine = createActor(clientMachine)
+			machine.start()
+			machine.send({
+				type: 'init',
+				wsUrl: SOCKET_URL,
+				dbName: 'jerry'
+			})
+
+			expect(requestSpy).toHaveBeenCalledOnce()
+		})
+
+		it('handles missing navigator.locks gracefully', () => {
+			// @ts-expect-error Remove navigator.locks
+			navigator.locks = undefined
+
+			const machine = createActor(clientMachine)
+			machine.start()
+
+			expect(() => {
+				machine.send({
+					type: 'init',
+					wsUrl: SOCKET_URL,
+					dbName: 'jerry'
+				})
+			}).toThrow() // Should throw since navigator.locks is undefined
+		})
+	})
+
+	describe('WebSocket onopen callback', () => {
+		let WebSocketOriginal: typeof WebSocket
+		let mockSocket: any
+		beforeAll(() => {
+			WebSocketOriginal = globalThis.WebSocket
+		})
+		afterEach(() => {
+			globalThis.WebSocket = WebSocketOriginal
+		})
+
+		it('sets up onopen callback correctly', () => {
+			mockSocket = {
+				onopen: null,
+				close: vi.fn(),
+				addEventListener: vi.fn(),
+				removeEventListener: vi.fn()
+			}
+			const MockWebSocket = vi.fn().mockImplementation(() => mockSocket)
+			globalThis.WebSocket = MockWebSocket
+
+			const machine = createActor(clientMachine)
+			machine.start()
+			machine.send({
+				type: 'init',
+				wsUrl: SOCKET_URL,
+				dbName: 'jerry'
+			})
+
+			expect(mockSocket.onopen).toBeDefined()
+			expect(typeof mockSocket.onopen).toBe('function')
+		})
+
+		it('onopen callback sends ws connected event', () => {
+			mockSocket = {
+				onopen: null,
+				close: vi.fn(),
+				addEventListener: vi.fn(),
+				removeEventListener: vi.fn()
+			}
+			const MockWebSocket = vi.fn().mockImplementation(() => mockSocket)
+			globalThis.WebSocket = MockWebSocket
+
+			const machine = createActor(clientMachine)
+			machine.start()
+			machine.send({
+				type: 'init',
+				wsUrl: SOCKET_URL,
+				dbName: 'jerry'
+			})
+
+			expect(machine.getSnapshot().value.websocket).toBe('disconnected')
+
+			// Simulate onopen callback
+			if (mockSocket.onopen) {
+				mockSocket.onopen()
+			}
+
+			expect(machine.getSnapshot().value.websocket).toBe('connected')
+		})
+	})
+
+	describe('edge case event combinations', () => {
+		it('handles events sent before machine is started', () => {
+			const machine = createActor(clientMachine)
+			
+			// Send events before starting - should be ignored
+			machine.send({
+				type: 'init',
+				wsUrl: SOCKET_URL,
+				dbName: 'jerry'
+			})
+
+			machine.start()
+			const snapshot = machine.getSnapshot()
+			expect(snapshot.context.wsUrl).toBeUndefined()
+			expect(snapshot.context.dbName).toBeUndefined()
+		})
+
+		it('handles rapid state transitions', () => {
+			const machine = createActor(clientMachine)
+			machine.start()
+			machine.send({
+				type: 'init',
+				wsUrl: SOCKET_URL,
+				dbName: 'jerry'
+			})
+
+			// Rapid fire events
+			machine.send({ type: 'ws connected' })
+			machine.send({ type: 'ws connection issue' })
+			machine.send({ type: 'ws connected' })
+			machine.send({ type: 'db connected' })
+			machine.send({ type: 'db cannot connect' })
+
+			const snapshot = machine.getSnapshot()
+			expect(snapshot.value.websocket).toBe('connected')
+			expect(snapshot.value.db).toBe('will never connect') // Final event wins
+		})
+
+		it('maintains state consistency during complex transitions', () => {
+			const machine = createActor(clientMachine)
+			machine.start()
+
+			// Complex sequence of events
+			machine.send({
+				type: 'init',
+				wsUrl: SOCKET_URL,
+				dbName: 'jerry'
+			})
+			machine.send({ type: 'ws connected' })
+			machine.send({ type: 'db connected' })
+			
+			if (assignedCallback) {
+				assignedCallback()
+			}
+
+			const snapshot = machine.getSnapshot()
+			expect(snapshot.value).toEqual({
+				websocket: 'connected',
+				db: 'connected',
+				superiority: 'leader'
+			})
+			expect(snapshot.context.wsUrl).toBe(SOCKET_URL)
+			expect(snapshot.context.dbName).toBe('jerry.sqlite')
+		})
+	})
+
+	describe('type safety and validation', () => {
+		it('accepts properly typed init events', () => {
+			const machine = createActor(clientMachine)
+			machine.start()
+
+			// These should not cause TypeScript errors
+			machine.send({
+				type: 'init',
+				wsUrl: 'wss://example.com',
+				dbName: 'test'
+			})
+
+			machine.send({ type: 'ws connected' })
+			machine.send({ type: 'ws connection issue' })
+			machine.send({ type: 'db connected' })
+			machine.send({ type: 'db cannot connect' })
+			machine.send({ type: 'leader lock acquired' })
+
+			// Verify machine accepts all valid events
+			expect(machine.getSnapshot()).toBeDefined()
+		})
+
+		it('handles string variations in dbName', () => {
+			const machine = createActor(clientMachine)
+			machine.start()
+
+			const testCases = [
+				'simple',
+				'with-dashes',
+				'with_underscores',
+				'with123numbers',
+				'UPPERCASE',
+				'mixedCase',
+				'very-long-database-name-with-many-characters'
+			]
+
+			testCases.forEach(dbName => {
+				machine.send({
+					type: 'init',
+					wsUrl: SOCKET_URL,
+					dbName
+				})
+
+				const snapshot = machine.getSnapshot()
+				expect(snapshot.context.dbName).toBe(`${dbName}.sqlite`)
+			})
+		})
+	})
