@@ -434,14 +434,7 @@ describe('Custom Error Classes', () => {
 			let finalError: Error | null = null
 
 			try {
-				try {
-					throw new NoPortsError('Original error')
-				}
-				// eslint-disable-next-line no-useless-catch
-				catch (error) {
-					// Re-throw the same error
-					throw error
-				}
+				throw new NoPortsError('Original error')
 			} catch (error) {
 				finalError = error as Error
 			}

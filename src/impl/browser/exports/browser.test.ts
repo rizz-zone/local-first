@@ -3,7 +3,7 @@ import type {
   UpstreamWorkerMessageType
 } from '../../../types/messages/worker/UpstreamWorkerMessage'
 
-interface BrowserLocalFirstConfig<T> {
+interface BrowserLocalFirstConfig {
   dbName: string
   wsUrl: string
   worker: Worker | SharedWorker
@@ -12,7 +12,7 @@ interface BrowserLocalFirstConfig<T> {
 export class BrowserLocalFirst<T> {
   private postMessageFn: (message: UpstreamWorkerMessage<T>) => void
 
-  constructor({ dbName, wsUrl, worker }: BrowserLocalFirstConfig<T>) {
+  constructor({ dbName, wsUrl, worker }: BrowserLocalFirstConfig) {
     if (isSharedWorker(worker)) {
       this.postMessageFn = (message) => {
         try {
