@@ -22,6 +22,14 @@ export class PortManagerDoubleInitError extends Error {
 		Object.setPrototypeOf(this, PortManagerDoubleInitError.prototype)
 	}
 }
+export class TestOnlyError extends Error {
+	constructor(message: string) {
+		super(message)
+		this.name = 'TestOnlyError'
+
+		Object.setPrototypeOf(this, TestOnlyError.prototype)
+	}
+}
 export class AbsentPortDisconnectionError extends Error {
 	constructor(message: string) {
 		super(message)

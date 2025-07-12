@@ -1,6 +1,6 @@
 import { vi, beforeEach, describe, expect, it } from 'vitest'
 import { sharedWorkerEntrypoint } from './shared_worker'
-import { NoPortsError } from '../../../../errors'
+import { NoPortsError } from '../../../../common/errors'
 import { UpstreamWorkerMessageType } from '../../../../types/messages/worker/UpstreamWorkerMessage'
 import { WorkerLocalFirst } from '../../helpers/worker_thread'
 
