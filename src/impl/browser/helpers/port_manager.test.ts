@@ -182,9 +182,8 @@ describe('WorkerPort comprehensive functionality', () => {
 
 		it('ignores unknown message types gracefully', () => {
 			expect(() => {
-				// eslint-disable-next-line @typescript-eslint/no-explicit-any
 				userPort.postMessage({
-					type: 999 as any,
+					type: 999,
 					data: {}
 				})
 			}).not.toThrow()
@@ -346,10 +345,10 @@ describe('WorkerPort comprehensive functionality', () => {
 		it('properly cleans up single client instances', async () => {
 			const instances =
 				// @ts-expect-error instances is private
-				__testing__do_not_use_this_ever_or_you_will_have_a_terrible_time_and_also_cause_probably_pretty_major_and_significant_bugs_and_we_wouldnt_want_that_would_we__WorkerPort.instances
+				__testing__do_not_use_this_ever_or_you_will_have_a_terrible_time_and_also_cause_probably_pretty_major_and_significant_bugs_and_we_wouldn't_want_that_would_we__WorkerPort.instances
 			const clients =
 				// @ts-expect-error activeInstanceClients is private
-				__testing__do_not_use_this_ever_or_you_will_have_a_terrible_time_and_also_cause_probably_pretty_major_and_significant_bugs_and_we_wouldnt_want_that_would_we__WorkerPort.activeInstanceClients
+				__testing__do_not_use_this_ever_or_you_will_have_a_terrible_time_and_also_cause_probably_pretty_major_and_significant_bugs_and_we_wouldn't_want_that_would_we__WorkerPort.activeInstanceClients
 
 			userPort.postMessage({
 				type: UpstreamWorkerMessageType.Init,
@@ -373,10 +372,10 @@ describe('WorkerPort comprehensive functionality', () => {
 		it('properly manages client count for shared instances', async () => {
 			const instances =
 				// @ts-expect-error instances is private
-				__testing__do_not_use_this_ever_or_you_will_have_a_terrible_time_and_also_cause_probably_pretty_major_and_significant_bugs_and_we_wouldnt_want_that_would_we__WorkerPort.instances
+				__testing__do_not_use_this_ever_or_you_will_have_a_terrible_time_and_also_cause_probably_pretty_major_and_significant_bugs_and_we_wouldn't_want_that_would_we__WorkerPort.instances
 			const clients =
 				// @ts-expect-error activeInstanceClients is private
-				__testing__do_not_use_this_ever_or_you_will_have_a_terrible_time_and_also_cause_probably_pretty_major_and_significant_bugs_and_we_wouldnt_want_that_would_we__WorkerPort.activeInstanceClients
+				__testing__do_not_use_this_ever_or_you_will_have_a_terrible_time_and_also_cause_probably_pretty_major_and_significant_bugs_and_we_wouldn't_want_that_would_we__WorkerPort.activeInstanceClients
 
 			const config = {
 				wsUrl: SOCKET_URL,
@@ -466,10 +465,8 @@ describe('WorkerPort comprehensive functionality', () => {
 				userPort.postMessage({
 					type: UpstreamWorkerMessageType.Init,
 					data: {
-						// eslint-disable-next-line @typescript-eslint/no-explicit-any
-						wsUrl: null as any,
-						// eslint-disable-next-line @typescript-eslint/no-explicit-any
-						dbName: undefined as any
+						wsUrl: null as unknown as string,
+						dbName: undefined as unknown as string
 					}
 				})
 			}).not.toThrow()
@@ -480,7 +477,7 @@ describe('WorkerPort comprehensive functionality', () => {
 		it('handles rapid successive initialization attempts', async () => {
 			const instances =
 				// @ts-expect-error instances is private
-				__testing__do_not_use_this_ever_or_you_will_have_a_terrible_time_and_also_cause_probably_pretty_major_and_significant_bugs_and_we_wouldnt_want_that_would_we__WorkerPort.instances
+				__testing__do_not_use_this_ever_or_you_will_have_a_terrible_time_and_also_cause_probably_pretty_major_and_significant_bugs_and_we_wouldn't_want_that_would_we__WorkerPort.instances
 
 			for (let i = 0; i < 10; i++) {
 				userPort.postMessage({
@@ -512,7 +509,7 @@ describe('WorkerPort comprehensive functionality', () => {
 			await vi.waitUntil(() => {
 				const instances = 
 					// @ts-expect-error instances is private
-					__testing__do_not_use_this_ever_or_you_will_have_a_terrible_time_and_also_cause_probably_pretty_major_and_significant_bugs_and_we_wouldnt_want_that_would_we__WorkerPort.instances
+					__testing__do_not_use_this_ever_or_you_will_have_a_terrible_time_and_also_cause_probably_pretty_major_and_significant_bugs_and_we_wouldn't_want_that_would_we__WorkerPort.instances
 				return instances.size > 0
 			}, { interval: 5, timeout: 500 })
 
@@ -537,7 +534,7 @@ describe('WorkerPort comprehensive functionality', () => {
 			await vi.waitUntil(() => {
 				const instances = 
 					// @ts-expect-error instances is private
-					__testing__do_not_use_this_ever_or_you_will_have_a_terrible_time_and_also_cause_probably_pretty_major_and_significant_bugs_and_we_wouldnt_want_that_would_we__WorkerPort.instances
+					__testing__do_not_use_this_ever_or_you_will_have_a_terrible_time_and_also_cause_probably_pretty_major_and_significant_bugs_and_we_wouldn't_want_that_would_we__WorkerPort.instances
 				return instances.size > 0
 			}, { interval: 5, timeout: 500 })
 
@@ -560,7 +557,7 @@ describe('WorkerPort comprehensive functionality', () => {
 		it('does not accumulate memory with repeated operations', async () => {
 			const instances =
 				// @ts-expect-error instances is private
-				__testing__do_not_use_this_ever_or_you_will_have_a_terrible_time_and_also_cause_probably_pretty_major_and_significant_bugs_and_we_wouldnt_want_that_would_we__WorkerPort.instances
+				__testing__do_not_use_this_ever_or_you_will_have_a_terrible_time_and_also_cause_probably_pretty_major_and_significant_bugs_and_we_wouldn't_want_that_would_we__WorkerPort.instances
 
 			userPort.postMessage({
 				type: UpstreamWorkerMessageType.Init,
@@ -587,7 +584,7 @@ describe('WorkerPort comprehensive functionality', () => {
 		it('handles large numbers of different configurations', async () => {
 			const instances =
 				// @ts-expect-error instances is private
-				__testing__do_not_use_this_ever_or_you_will_have_a_terrible_time_and_also_cause_probably_pretty_major_and_significant_bugs_and_we_wouldnt_want_that_would_we__WorkerPort.instances
+				__testing__do_not_use_this_ever_or_you_will_have_a_terrible_time_and_also_cause_probably_pretty_major_and_significant_bugs_and_we_wouldn't_want_that_would_we__WorkerPort.instances
 
 			const numConfigs = 10
 
@@ -615,4 +612,3 @@ describe('WorkerPort comprehensive functionality', () => {
 			expect(instances.size).toBe(numConfigs)
 		})
 	})
-})

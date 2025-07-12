@@ -343,7 +343,7 @@ describe('createDurableObject', () => {
       const target = {};
       const result = Object.assign(target, instance);
       expect(result).toEqual({});
-      expect((result as any).getB).toBeUndefined();
+      expect((result as Record<string, unknown>)['getB']).toBeUndefined();
     });
   });
 });

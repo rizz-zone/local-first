@@ -14,6 +14,22 @@ import { http, ws } from 'msw'
 import { setupServer } from 'msw/node'
 import { SOCKET_URL } from '../../../testing/constants'
 
+let assignedCallback: (() => Promise<unknown>) | undefined
+const lockMethod = vi.fn().mockImplementation(
+	(_: string, callback: () => Promise<unknown>) =>
+		new Promise<void>((resolve) => {
+			assignedCallback = callback
+			resolve()
+		})
+)
+
+beforeAll(() => {
+	// @ts-expect-error navigator.locks doesn't exist in jsdom
+	navigator.locks = {
+		request: lockMethod
+	}
+})
+
 const socketEndpoint = ws.link(SOCKET_URL)
 const server = setupServer(
 	socketEndpoint.addEventListener('connection', (server) => {
@@ -26,21 +42,6 @@ const server = setupServer(
 )
 
 describe('worker machine', () => {
-	let assignedCallback: undefined | (() => Promise<unknown>)
-	const lockMethod = vi.fn().mockImplementation(
-		(_: string, callback: () => Promise<unknown>) =>
-			new Promise<void>((resolve) => {
-				assignedCallback = callback
-				resolve()
-			})
-	)
-	beforeAll(() => {
-		// @ts-expect-error navigator.locks doesn't exist in jsdom
-		navigator.locks = {
-			request: lockMethod
-		}
-	})
-
 	it('starts with no connections', () => {
 		const machine = createActor(clientMachine)
 		machine.start()
@@ -297,7 +298,7 @@ describe('database state management', () => {
 
 describe('websocket error scenarios', () => {
 	let WebSocketOriginal: typeof WebSocket
-	let mockSocket: any
+	let mockSocket
 	beforeAll(() => {
 		WebSocketOriginal = globalThis.WebSocket
 	})

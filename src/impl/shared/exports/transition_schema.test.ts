@@ -435,7 +435,7 @@ describe('data field variations', () => {
 			impact: type.enumerated(TransitionImpact.LocalOnly),
 			data: {
 				stringArray: 'string[]',
-				numberTuple: '[number, number]',
+				numberTuple: type.tuple('number', 'number'),
 				mixedArray: '(string|number)[]'
 			}
 		})
