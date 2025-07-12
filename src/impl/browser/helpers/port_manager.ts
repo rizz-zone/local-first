@@ -1,6 +1,10 @@
 /// <reference lib="webworker" />
 
-import { NoPortsError, PortDoubleInitError } from '../../../errors'
+import {
+	NoPortsError,
+	PortDoubleInitError,
+	PortManagerDoubleInitError
+} from '../../../errors'
 import type { InstanceData } from '../../../types/common/client/InstanceData'
 import type { InstanceKey } from '../../../types/common/client/InstanceKey'
 import {
@@ -114,7 +118,17 @@ class WorkerPort<TransitionSchema extends Transition> {
 	}
 }
 
+let initDone = false
 function init<TransitionSchema extends Transition>() {
+	if (initDone)
+		throw new PortManagerDoubleInitError(
+			'Port manager init happened twice! This ' +
+				'is a process that happens internally, so ' +
+				'this might be a problem with ground0. ' +
+				'Report at ' +
+				'https://ground0.rizz.zone/report/pm-double-init'
+		)
+	initDone = true
 	ctx.onconnect = (event) => {
 		const port = event.ports[0]
 		if (!port)
