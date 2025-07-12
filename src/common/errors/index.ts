@@ -11,15 +11,15 @@ export class PortDoubleInitError extends Error {
 		super(message)
 		this.name = 'DoublePortInitError'
 
-		Object.setPrototypeOf(this, AbsentPortDisconnectionError.prototype)
+		Object.setPrototypeOf(this, PortDoubleInitError.prototype)
 	}
 }
-export class PortManagerDoubleInitError extends Error {
+export class WorkerDoubleInitError extends Error {
 	constructor(message: string) {
 		super(message)
-		this.name = 'PortManagerDoubleInitError'
+		this.name = 'WorkerDoubleInitError'
 
-		Object.setPrototypeOf(this, PortManagerDoubleInitError.prototype)
+		Object.setPrototypeOf(this, WorkerDoubleInitError.prototype)
 	}
 }
 export class TestOnlyError extends Error {

@@ -81,7 +81,7 @@ describe('BrowserLocalFirst', () => {
 						wsUrl: SOCKET_URL
 					}
 				} satisfies UpstreamWorkerMessage<TestingTransition>)
-				expect(mockWorker.postMessage).toHaveBeenCalledTimes(0)
+				expect(mockWorker.postMessage).not.toBeCalled()
 			})
 			it('sends transitions', () => {
 				const syncEngine = new BrowserLocalFirst<TestingTransition>({
@@ -101,7 +101,7 @@ describe('BrowserLocalFirst', () => {
 						impact: TransitionImpact.LocalOnly
 					}
 				})
-				expect(mockWorker.postMessage).toHaveBeenCalledTimes(0)
+				expect(mockWorker.postMessage).not.toBeCalled()
 			})
 		})
 	})

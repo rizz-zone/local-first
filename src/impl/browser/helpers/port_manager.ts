@@ -1,12 +1,6 @@
 /// <reference lib="webworker" />
 
-import { notVitest } from '../../../common/not_vitest'
-import {
-	NoPortsError,
-	PortDoubleInitError,
-	PortManagerDoubleInitError,
-	TestOnlyError
-} from '../../../common/errors'
+import { NoPortsError, PortDoubleInitError } from '../../../common/errors'
 import type { InstanceData } from '../../../types/common/client/InstanceData'
 import type { InstanceKey } from '../../../types/common/client/InstanceKey'
 import {
@@ -15,11 +9,7 @@ import {
 } from '../../../types/messages/worker/UpstreamWorkerMessage'
 import type { Transition } from '../../../types/transitions/Transition'
 import { WorkerLocalFirst } from './worker_thread'
-import {
-	DOUBLE_PORT_MANAGER_INIT,
-	DOUBLE_SHAREDWORKER_PORT_INIT,
-	TEST_ONLY
-} from '../../../common/errors/messages'
+import { DOUBLE_SHAREDWORKER_PORT_INIT } from '../../../common/errors/messages'
 
 const ctx = self as unknown as SharedWorkerGlobalScope
 
@@ -85,6 +75,10 @@ class WorkerPort<TransitionSchema extends Transition> {
 					break
 			}
 		}
+		this.port.onmessageerror = () =>
+			console.error(
+				'Message error on SharedWorker. This is rare and suggests a browser or hardware issue.'
+			)
 	}
 
 	[Symbol.dispose]() {
@@ -119,10 +113,7 @@ class WorkerPort<TransitionSchema extends Transition> {
 	}
 }
 
-let initDone = false
 function init<TransitionSchema extends Transition>() {
-	if (initDone) throw new PortManagerDoubleInitError(DOUBLE_PORT_MANAGER_INIT)
-	initDone = true
 	ctx.onconnect = (event) => {
 		const port = event.ports[0]
 		if (!port)
@@ -133,7 +124,3 @@ function init<TransitionSchema extends Transition>() {
 }
 
 export const portManager = { init }
-export function __testing__do_not_use_ever__resetInit() {
-	if (notVitest()) throw new TestOnlyError(TEST_ONLY)
-	initDone = false
-}

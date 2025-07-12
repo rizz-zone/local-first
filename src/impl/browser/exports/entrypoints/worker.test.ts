@@ -10,11 +10,9 @@ const mockWorkerLocalFirstInstance = {
 	[Symbol.dispose]: vi.fn()
 }
 
-vi.mock('../../classes/worker_thread', () => ({
+vi.mock('../../helpers/worker_thread', () => ({
 	WorkerLocalFirst: vi.fn(() => mockWorkerLocalFirstInstance)
 }))
-
-const mockedWorkerLocalFirst = vi.mocked(WorkerLocalFirst)
 
 describe('Worker entrypoint', () => {
 	beforeEach(() => {
@@ -38,7 +36,7 @@ describe('Worker entrypoint', () => {
 		if (!workerScope.onmessage) throw new Error('onmessage is not defined')
 		workerScope.onmessage(new MessageEvent('message', { data: message }))
 
-		expect(mockedWorkerLocalFirst).toHaveBeenCalledOnce()
+		expect(WorkerLocalFirst).toHaveBeenCalledOnce()
 		expect(mockWorkerLocalFirstInstance.init).toHaveBeenCalledWith({
 			wsUrl: 'ws://localhost:8080',
 			dbName: 'test-db'
