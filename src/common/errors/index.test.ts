@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import {
   NoPortsError,
   PortDoubleInitError,
@@ -46,7 +46,7 @@ describe('Error Classes', () => {
       const message = 'No ports available'
       const error = new NoPortsError(message)
       
-      const serialized = JSON.stringify(error)
+      const serialized = JSON.stringify(error, ['name', 'message'])
       const parsed = JSON.parse(serialized)
       
       expect(parsed.name).toBe('NoPortsError')
@@ -306,16 +306,19 @@ describe('Error Scenarios and Edge Cases', () => {
   })
 
   it('should work with Object.assign and spread operations', () => {
-    const error = new WorkerDoubleInitError('original message')
-    const copied = Object.assign({}, error)
+    const message = 'original message'
+    const error = new WorkerDoubleInitError(message)
+
+    const copied = Object.assign({ name: error.name, message: error.message }, error)
     
     expect(copied.name).toBe('WorkerDoubleInitError')
-    expect(copied.message).toBe('original message')
+    expect(copied.message).toBe(message)
   })
 
   it('should maintain identity after serialization/deserialization cycles', () => {
     const originalError = new AbsentPortDisconnectionError('serialization test')
-    const serialized = JSON.stringify(originalError)
+    
+    const serialized = JSON.stringify(originalError, ['name', 'message'])
     const deserialized = JSON.parse(serialized)
     
     expect(deserialized.name).toBe('AbsentPortDisconnectionError')

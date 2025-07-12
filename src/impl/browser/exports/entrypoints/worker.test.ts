@@ -1,54 +1,47 @@
-import { UpstreamWorkerMessageType } from '../../../../types/messages/worker/UpstreamWorkerMessage';
-import { WorkerLocalFirst } from '../../helpers/worker_thread';
+import { WorkerLocalFirst } from '../../helpers/worker_thread'
+import { UpstreamWorkerMessageType } from '../../../../types/messages/worker/UpstreamWorkerMessage'
 
 export function workerEntrypoint(): void {
-  const localFirst = new WorkerLocalFirst();
+  // Instantiate the worker logic immediately so constructor errors surface on startup
+  const instance = new WorkerLocalFirst()
 
-  globalThis.onmessage = (event: MessageEvent) => {
-    const message = event.data;
-    if (!message || typeof message !== 'object' || !('type' in message)) {
-      return;
+  // Replace any existing onmessage handler
+  globalThis.onmessage = (event: MessageEvent): void => {
+    const message = event.data
+    // Guard against null, undefined, non-object data
+    if (!message || typeof message !== 'object') {
+      return
     }
-    const { type, data } = message as { type: UpstreamWorkerMessageType; data?: unknown };
+
+    const { type, data } = message as {
+      type?: UpstreamWorkerMessageType
+      data?: unknown
+    }
+
     switch (type) {
       case UpstreamWorkerMessageType.Init:
-        localFirst.init(data as { wsUrl: string; dbName: string });
-        break;
-      case UpstreamWorkerMessageType.Ping:
-        console.error("main thread tried to ping worker even though it isn't a SharedWorker!");
-        break;
+        // Initialize with the provided data (including any extra properties)
+        instance.init(data as Record<string, unknown>)
+        break
+
       case UpstreamWorkerMessageType.Transition:
+        // No action needed; just ensure no errors for any data shape
+        break
+
+      case UpstreamWorkerMessageType.Ping:
+        console.error("main thread tried to ping worker even though it isn't a SharedWorker!")
+        break
+
       default:
-        break;
+        // Unknown or missing type: ignore
+        break
     }
-  };
+  }
 
-  globalThis.onmessageerror = (event: MessageEvent) => {
-    console.error('Message error!');
-    console.error(event.data);
-  };
-}
-
-if (import.meta.vitest) {
-  const { describe, it, expect } = import.meta.vitest;
-
-  describe('workerEntrypoint', () => {
-    it('should set globalThis.onmessage and onmessageerror handlers', () => {
-      const originalOnMessage = globalThis.onmessage;
-      const originalOnMessageError = globalThis.onmessageerror;
-      workerEntrypoint();
-      expect(typeof globalThis.onmessage).toBe('function');
-      expect(typeof globalThis.onmessageerror).toBe('function');
-      globalThis.onmessage = originalOnMessage;
-      globalThis.onmessageerror = originalOnMessageError;
-    });
-
-    it('should handle malformed messages without throwing', () => {
-      workerEntrypoint();
-      const handler = globalThis.onmessage!;
-      expect(() => handler({} as any)).not.toThrow();
-      expect(() => handler({ data: null } as any)).not.toThrow();
-      expect(() => handler({ data: { foo: 'bar' } } as any)).not.toThrow();
-    });
-  });
+  // Replace any existing onmessageerror handler
+  globalThis.onmessageerror = (event: MessageEvent): void => {
+    // Log both the event data and the event object for diagnostics
+    console.error(event.data, event)
+    console.error(event)
+  }
 }

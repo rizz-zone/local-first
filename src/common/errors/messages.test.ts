@@ -1,8 +1,8 @@
 import { describe, it, expect } from 'vitest';
-import { 
-  TEST_ONLY, 
-  DOUBLE_SHAREDWORKER_PORT_INIT, 
-  workerDoubleInit 
+import {
+  TEST_ONLY,
+  DOUBLE_SHAREDWORKER_PORT_INIT,
+  workerDoubleInit
 } from './messages';
 
 describe('Error Messages Module', () => {
@@ -124,22 +124,22 @@ describe('Error Messages Module', () => {
 
     describe('edge cases', () => {
       it('should handle truthy values', () => {
-        expect(() => workerDoubleInit(1 as any)).not.toThrow();
-        expect(() => workerDoubleInit('true' as any)).not.toThrow();
-        expect(() => workerDoubleInit({} as any)).not.toThrow();
+        expect(() => workerDoubleInit(1 as unknown as boolean)).not.toThrow();
+        expect(() => workerDoubleInit('true' as unknown as boolean)).not.toThrow();
+        expect(() => workerDoubleInit({} as unknown as boolean)).not.toThrow();
       });
 
       it('should handle falsy values', () => {
-        expect(() => workerDoubleInit(0 as any)).not.toThrow();
-        expect(() => workerDoubleInit('' as any)).not.toThrow();
-        expect(() => workerDoubleInit(null as any)).not.toThrow();
-        expect(() => workerDoubleInit(undefined as any)).not.toThrow();
+        expect(() => workerDoubleInit(0 as unknown as boolean)).not.toThrow();
+        expect(() => workerDoubleInit('' as unknown as boolean)).not.toThrow();
+        expect(() => workerDoubleInit(null as unknown as boolean)).not.toThrow();
+        expect(() => workerDoubleInit(undefined as unknown as boolean)).not.toThrow();
       });
 
       it('should return consistent message structure for all boolean values', () => {
         const trueResult = workerDoubleInit(true);
         const falseResult = workerDoubleInit(false);
-        
+
         expect(trueResult).toContain('To resolve this:');
         expect(falseResult).toContain('To resolve this:');
         expect(trueResult).toContain('entrypoint called twice');
@@ -163,7 +163,7 @@ describe('Error Messages Module', () => {
       it('should warn against running other code', () => {
         const sharedResult = workerDoubleInit(true);
         const regularResult = workerDoubleInit(false);
-        
+
         expect(sharedResult).toContain('Do not run any other code inside of your worker');
         expect(regularResult).toContain('Do not run any other code inside of your worker');
       });
@@ -173,7 +173,7 @@ describe('Error Messages Module', () => {
   describe('Message consistency and quality', () => {
     it('should have consistent error message patterns', () => {
       const messages = [TEST_ONLY, DOUBLE_SHAREDWORKER_PORT_INIT];
-      
+
       messages.forEach(message => {
         expect(message).toContain('ground0');
         expect(message).toContain('https://ground0.rizz.zone/report/');
@@ -182,13 +182,13 @@ describe('Error Messages Module', () => {
     });
 
     it('should have proper capitalization and punctuation', () => {
-      expect(TEST_ONLY).toMatch(/^[A-Z]/); // Starts with capital
-      expect(DOUBLE_SHAREDWORKER_PORT_INIT).toMatch(/^[A-Z]/); // Starts with capital
-      
+      expect(TEST_ONLY).toMatch(/^[A-Z]/);
+      expect(DOUBLE_SHAREDWORKER_PORT_INIT).toMatch(/^[A-Z]/);
+
       const sharedWorkerMsg = workerDoubleInit(true);
       const regularWorkerMsg = workerDoubleInit(false);
-      expect(sharedWorkerMsg).toMatch(/^[A-Z]/); // Starts with capital
-      expect(regularWorkerMsg).toMatch(/^[A-Z]/); // Starts with capital
+      expect(sharedWorkerMsg).toMatch(/^[A-Z]/);
+      expect(regularWorkerMsg).toMatch(/^[A-Z]/);
     });
 
     it('should not contain obvious typos or grammar issues', () => {
@@ -200,10 +200,10 @@ describe('Error Messages Module', () => {
       ];
 
       allMessages.forEach(message => {
-        expect(message).not.toContain('  '); // No double spaces
-        expect(message).not.toMatch(/\s+$/m); // No trailing whitespace on lines
-        expect(message).not.toContain('teh'); // Common typo
-        expect(message).not.toContain('hte'); // Common typo
+        expect(message).not.toContain('  ');
+        expect(message).not.toMatch(/\s+$/m);
+        expect(message).not.toContain('teh');
+        expect(message).not.toContain('hte');
       });
     });
   });
@@ -211,7 +211,7 @@ describe('Error Messages Module', () => {
   describe('URL validation', () => {
     it('should contain valid report URLs', () => {
       const urlRegex = /https:\/\/ground0\.rizz\.zone\/report\/[a-z_]+/g;
-      
+
       expect(TEST_ONLY).toMatch(urlRegex);
       expect(DOUBLE_SHAREDWORKER_PORT_INIT).toMatch(urlRegex);
     });
@@ -219,18 +219,21 @@ describe('Error Messages Module', () => {
     it('should have distinct report identifiers', () => {
       const testOnlyMatch = TEST_ONLY.match(/report\/([a-z_]+)/);
       const doubleInitMatch = DOUBLE_SHAREDWORKER_PORT_INIT.match(/report\/([a-z_]+)/);
-      
-      expect(testOnlyMatch).toBeTruthy();
-      expect(doubleInitMatch).toBeTruthy();
-      expect(testOnlyMatch![1]).not.toBe(doubleInitMatch![1]);
-      expect(testOnlyMatch![1]).toBe('test_only_fn_used');
-      expect(doubleInitMatch![1]).toBe('sw_double_init');
+
+      if (!testOnlyMatch || !doubleInitMatch) {
+        throw new Error('Report identifier match failed');
+      }
+      const testOnlyId = testOnlyMatch[1];
+      const doubleInitId = doubleInitMatch[1];
+
+      expect(testOnlyId).not.toBe(doubleInitId);
+      expect(testOnlyId).toBe('test_only_fn_used');
+      expect(doubleInitId).toBe('sw_double_init');
     });
   });
 
   describe('Integration scenarios', () => {
     it('should work in error handling contexts', () => {
-      // Simulate how these might be used in actual error handling
       const errors = {
         testingOutsideVitest: TEST_ONLY,
         sharedWorkerDoubleInit: DOUBLE_SHAREDWORKER_PORT_INIT,
@@ -252,9 +255,8 @@ describe('Error Messages Module', () => {
       ];
 
       messages.forEach(message => {
-        // Each message should help developers understand what went wrong
-        expect(message.length).toBeGreaterThan(50); // Substantial content
-        expect(message).toMatch(/[A-Z]/); // Contains meaningful words
+        expect(message.length).toBeGreaterThan(50);
+        expect(message).toMatch(/[A-Z]/);
       });
     });
   });
@@ -262,14 +264,13 @@ describe('Error Messages Module', () => {
   describe('Performance considerations', () => {
     it('should generate worker messages efficiently', () => {
       const start = performance.now();
-      
-      // Generate messages repeatedly to test performance
+
       for (let i = 0; i < 1000; i++) {
         workerDoubleInit(i % 2 === 0);
       }
-      
+
       const end = performance.now();
-      expect(end - start).toBeLessThan(50); // Should be very fast
+      expect(end - start).toBeLessThan(50);
     });
 
     it('should have reasonable message lengths', () => {
@@ -281,8 +282,8 @@ describe('Error Messages Module', () => {
       ];
 
       messages.forEach(message => {
-        expect(message.length).toBeLessThan(1000); // Not excessively long
-        expect(message.length).toBeGreaterThan(20); // Not too short to be useful
+        expect(message.length).toBeLessThan(1000);
+        expect(message.length).toBeGreaterThan(20);
       });
     });
   });

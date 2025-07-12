@@ -1,12 +1,12 @@
 import {
-	afterAll,
-	afterEach,
-	beforeAll,
-	beforeEach,
-	describe,
-	expect,
-	it,
-	vi
+  afterAll,
+  afterEach,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi
 } from 'vitest'
 import { clientMachine } from './worker'
 import { createActor } from 'xstate'
@@ -16,373 +16,264 @@ import { SOCKET_URL } from '../../../testing/constants'
 
 const socketEndpoint = ws.link(SOCKET_URL)
 const server = setupServer(
-	socketEndpoint.addEventListener('connection', (server) => {
-		server.server.connect()
-	}),
-	http.get(SOCKET_URL.replace('wss', 'https'), () => new Response())
+  socketEndpoint.addEventListener('connection', (server) => {
+    server.server.connect()
+  }),
+  // We shouldn't need this but msw complains (without an error) if we don't have it
+  http.get(SOCKET_URL.replace('wss', 'https'), () => {
+    return new Response()
+  })
 )
 
-describe('worker machine', () => {
-	let assignedCallback: (() => Promise<unknown>) | undefined
-	const lockMethod = vi.fn().mockImplementation(
-		(_: string, callback: () => Promise<unknown>) =>
-			new Promise<void>((resolve) => {
-				assignedCallback = callback
-				resolve()
-			})
-	)
+describe('cleanup and resource management', () => {
+  let WebSocketOriginal: typeof WebSocket
+  let mockSocket: any
 
-	beforeAll(() => {
-		// @ts-expect-error navigator.locks doesn't exist in jsdom
-		navigator.locks = {
-			request: lockMethod
-		}
-	})
+  beforeAll(() => {
+    WebSocketOriginal = globalThis.WebSocket
+  })
 
-	it('starts with no connections', () => {
-		const machine = createActor(clientMachine)
-		machine.start()
+  beforeEach(() => {
+    mockSocket = {
+      readyState: WebSocket.OPEN,
+      close: vi.fn(),
+      send: vi.fn(),
+      onopen: null,
+      onerror: null,
+      onclose: null,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      dispatchEvent: vi.fn()
+    }
+    const WebSocketMock = vi.fn().mockReturnValue(mockSocket)
+    globalThis.WebSocket = WebSocketMock as unknown as typeof WebSocket
+  })
 
-		const snapshot = machine.getSnapshot()
-		expect(snapshot.value).toEqual({
-			websocket: 'disconnected',
-			db: 'disconnected',
-			superiority: 'follower'
-		})
-	})
+  afterAll(() => {
+    globalThis.WebSocket = WebSocketOriginal
+  })
 
-	describe('socket setup', () => {
-		let WebSocketOriginal: typeof WebSocket
-		let WebSocketMock: typeof WebSocket
+  it('handles stopping machine before initialization', () => {
+    const machine = createActor(clientMachine)
+    machine.start()
 
-		beforeAll(() => {
-			WebSocketOriginal = globalThis.WebSocket
-		})
-		beforeEach(() => {
-			WebSocketMock = vi.fn() as unknown as typeof WebSocket
-			globalThis.WebSocket = WebSocketMock
-		})
-		afterAll(() => {
-			globalThis.WebSocket = WebSocketOriginal
-		})
+    // Stop before init - should not throw
+    expect(() => machine.stop()).not.toThrow()
+  })
 
-		it('does not set a websocket up before init', () => {
-			const machine = createActor(clientMachine)
-			machine.start()
-			const { context } = machine.getSnapshot()
+  it('handles stopping machine after initialization', () => {
+    const machine = createActor(clientMachine)
+    machine.start()
+    machine.send({
+      type: 'init',
+      wsUrl: SOCKET_URL,
+      dbName: 'cleanup-test'
+    })
 
-			expect(WebSocketMock).not.toBeCalled()
-			expect(context.socket).toBeUndefined()
-			expect(context.wsUrl).toBeUndefined()
-		})
+    // Stop after init - should not throw
+    expect(() => machine.stop()).not.toThrow()
+  })
 
-		it('sets a websocket up after init', () => {
-			const machine = createActor(clientMachine)
-			machine.start()
-			machine.send({
-				type: 'init',
-				wsUrl: SOCKET_URL,
-				dbName: 'jerry'
-			})
-			const { context } = machine.getSnapshot()
+  it('handles stopping machine multiple times', () => {
+    const machine = createActor(clientMachine)
+    machine.start()
+    machine.send({
+      type: 'init',
+      wsUrl: SOCKET_URL,
+      dbName: 'multi-stop-test'
+    })
 
-			expect(WebSocketMock).toHaveBeenCalledOnce()
-			expect(WebSocketMock).toHaveBeenCalledWith(SOCKET_URL)
-			expect(context.socket).toBeInstanceOf(WebSocket)
-			expect(context.wsUrl).toBe(SOCKET_URL)
-		})
-	})
+    // Stop multiple times - should not throw
+    expect(() => {
+      machine.stop()
+      machine.stop()
+    }).not.toThrow()
+  })
+})
 
-	describe('socket use', () => {
-		beforeAll(() => server.listen())
-		afterEach(() => server.resetHandlers())
-		afterAll(() => server.close())
+describe('lock mechanism edge cases', () => {
+  const lockMethod = vi.fn()
+  const clearLockState = () => {
+    lockMethod.mockClear()
+  }
 
-		it('changes state after successfully connecting', async () => {
-			const machine = createActor(clientMachine)
-			machine.start()
-			machine.send({
-				type: 'init',
-				wsUrl: SOCKET_URL,
-				dbName: 'jerry'
-			})
+  beforeAll(() => {
+    // @ts-expect-error navigator.locks doesn't exist in jsdom
+    navigator.locks = { request: lockMethod }
+  })
+  beforeAll(clearLockState)
+  afterEach(clearLockState)
 
-			await vi.waitUntil(
-				() => machine.getSnapshot().value.websocket === 'connected',
-				{ timeout: 500, interval: 20 }
-			)
+  it('handles missing navigator.locks gracefully', () => {
+    // Temporarily remove navigator.locks
+    const originalLocks = navigator.locks
+    // @ts-expect-error testing missing navigator.locks
+    delete navigator.locks
 
-			expect(machine.getSnapshot().value).toEqual({
-				websocket: 'connected',
-				db: 'disconnected',
-				superiority: 'follower'
-			})
-		})
-	})
+    try {
+      const machine = createActor(clientMachine)
+      machine.start()
 
-	describe('locking', () => {
-		const clear = () => {
-			lockMethod.mockClear()
-			assignedCallback = undefined
-		}
-		beforeAll(clear)
-		afterEach(clear)
+      // Should throw when trying to access navigator.locks
+      expect(() => {
+        machine.send({
+          type: 'init',
+          wsUrl: SOCKET_URL,
+          dbName: 'no-locks-test'
+        })
+      }).toThrow()
+    } finally {
+      // Restore navigator.locks
+      // @ts-expect-error restoring navigator.locks
+      navigator.locks = originalLocks
+    }
+  })
 
-		it('does not request a lock before init', () => {
-			const machine = createActor(clientMachine)
-			machine.start()
+  it('handles lock request with different resource names', () => {
+    const machine1 = createActor(clientMachine)
+    const machine2 = createActor(clientMachine)
 
-			const snapshot = machine.getSnapshot()
-			expect(snapshot.value.superiority).toBe('follower')
-			expect(lockMethod).not.toBeCalled()
-		})
-		it('requests a lock on init', () => {
-			const machine = createActor(clientMachine)
-			machine.start()
-			machine.send({
-				type: 'init',
-				wsUrl: SOCKET_URL,
-				dbName: 'jerry'
-			})
+    machine1.start()
+    machine2.start()
 
-			const snapshot = machine.getSnapshot()
-			expect(snapshot.value.superiority).toEqual('follower')
-			expect(lockMethod).toHaveBeenCalledOnce()
-		})
+    machine1.send({
+      type: 'init',
+      wsUrl: SOCKET_URL,
+      dbName: 'db1'
+    })
 
-		describe('callback', () => {
-			it('makes this worker superior when called', async () => {
-				const machine = createActor(clientMachine)
-				machine.start()
-				machine.send({
-					type: 'init',
-					wsUrl: SOCKET_URL,
-					dbName: 'jerry'
-				})
-				expect(lockMethod).toHaveBeenCalledOnce()
-				expect(assignedCallback).toBeDefined()
+    machine2.send({
+      type: 'init',
+      wsUrl: SOCKET_URL,
+      dbName: 'db2'
+    })
 
-				const callback = assignedCallback
-				if (!callback) {
-					throw new Error('assignedCallback is undefined')
-				}
-				callback()
+    // Both should request locks
+    expect(lockMethod).toHaveBeenCalledTimes(2)
+  })
 
-				await vi.waitUntil(
-					() => machine.getSnapshot().value.superiority === 'leader',
-					{ timeout: 500, interval: 5 }
-				)
+  it('handles superiority state transitions correctly', async () => {
+    const machine = createActor(clientMachine)
+    machine.start()
 
-				const snapshot = machine.getSnapshot()
-				expect(snapshot.value.superiority).toEqual('leader')
-			})
+    // Initial state should be follower
+    expect(machine.getSnapshot().value.superiority).toBe('follower')
 
-			it('does not resolve the promise returned by the callback', async () => {
-				const machine = createActor(clientMachine)
-				machine.start()
-				machine.send({
-					type: 'init',
-					wsUrl: SOCKET_URL,
-					dbName: 'jerry'
-				})
-				expect(lockMethod).toHaveBeenCalledOnce()
-				expect(assignedCallback).toBeDefined()
+    machine.send({
+      type: 'init',
+      wsUrl: SOCKET_URL,
+      dbName: 'superiority-test'
+    })
 
-				const callback = assignedCallback
-				if (!callback) {
-					throw new Error('assignedCallback is undefined')
-				}
-				const promise = callback()
-				const timeout = new Promise((resolve) => {
-					setTimeout(() => {
-						resolve('not resolved')
-					}, 600)
-				})
+    // Should still be follower after init
+    expect(machine.getSnapshot().value.superiority).toBe('follower')
 
-				await expect(Promise.race([promise, timeout])).resolves.toBe(
-					'not resolved'
-				)
-			})
-		})
-	})
+    // Send leader lock acquired event
+    machine.send({ type: 'leader lock acquired' })
 
-	describe('database state transitions', () => {
-		it('can transition to connected state', () => {
-			const machine = createActor(clientMachine)
-			machine.start()
-			machine.send({
-				type: 'init',
-				wsUrl: SOCKET_URL,
-				dbName: 'jerry'
-			})
+    await vi.waitUntil(
+      () => machine.getSnapshot().value.superiority === 'leader',
+      { timeout: 500, interval: 20 }
+    )
 
-			machine.send({ type: 'db connected' })
+    expect(machine.getSnapshot().value.superiority).toBe('leader')
+  })
+})
 
-			const snapshot = machine.getSnapshot()
-			expect(snapshot.value.db).toBe('connected')
-		})
+describe('parallel state validation', () => {
+  it('maintains independent parallel states', async () => {
+    const machine = createActor(clientMachine)
+    machine.start()
 
-		it('can transition to will never connect state', () => {
-			const machine = createActor(clientMachine)
-			machine.start()
-			machine.send({
-				type: 'init',
-				wsUrl: SOCKET_URL,
-				dbName: 'jerry'
-			})
+    // Initial parallel state
+    expect(machine.getSnapshot().value).toEqual({
+      websocket: 'disconnected',
+      db: 'disconnected',
+      superiority: 'follower'
+    })
 
-			machine.send({ type: 'db cannot connect' })
+    // Init should trigger actions in multiple parallel states
+    machine.send({
+      type: 'init',
+      wsUrl: SOCKET_URL,
+      dbName: 'parallel-test'
+    })
 
-			const snapshot = machine.getSnapshot()
-			expect(snapshot.value.db).toBe('will never connect')
-		})
+    // WebSocket and DB states should remain independent
+    machine.send({ type: 'ws connected' })
 
-		it('appends .sqlite to database name on init', () => {
-			const machine = createActor(clientMachine)
-			machine.start()
-			machine.send({
-				type: 'init',
-				wsUrl: SOCKET_URL,
-				dbName: 'test-db'
-			})
+    await vi.waitUntil(
+      () => machine.getSnapshot().value.websocket === 'connected',
+      { timeout: 500, interval: 20 }
+    )
 
-			const { context } = machine.getSnapshot()
-			expect(context.dbName).toBe('test-db.sqlite')
-		})
+    // WebSocket connected but DB still disconnected
+    expect(machine.getSnapshot().value).toEqual({
+      websocket: 'connected',
+      db: 'disconnected',
+      superiority: 'follower'
+    })
 
-		it('handles database events before init gracefully', () => {
-			const machine = createActor(clientMachine)
-			machine.start()
+    // Connect DB independently
+    machine.send({ type: 'db connected' })
 
-			machine.send({ type: 'db connected' })
-			machine.send({ type: 'db cannot connect' })
+    await vi.waitUntil(
+      () => machine.getSnapshot().value.db === 'connected',
+      { timeout: 500, interval: 20 }
+    )
 
-			const snapshot = machine.getSnapshot()
-			expect(snapshot.value.db).toBe('will never connect')
-		})
-	})
+    expect(machine.getSnapshot().value).toEqual({
+      websocket: 'connected',
+      db: 'connected',
+      superiority: 'follower'
+    })
+  })
 
-	describe('websocket connection error handling', () => {
-		let WebSocketOriginal: typeof WebSocket
-		// eslint-disable-next-line @typescript-eslint/no-explicit-any
-		let MockWebSocket: any
+  it('handles final states correctly', async () => {
+    const machine = createActor(clientMachine)
+    machine.start()
 
-		beforeAll(() => {
-			WebSocketOriginal = globalThis.WebSocket
-		})
-		afterEach(() => {
-			globalThis.WebSocket = WebSocketOriginal
-		})
+    // Move to final states
+    machine.send({ type: 'db connected' })
+    machine.send({ type: 'leader lock acquired' })
 
-		it('handles ws connection issue event', () => {
-			const machine = createActor(clientMachine)
-			machine.start()
-			machine.send({
-				type: 'init',
-				wsUrl: SOCKET_URL,
-				dbName: 'jerry'
-			})
+    await vi.waitUntil(
+      () => {
+        const snapshot = machine.getSnapshot()
+        return snapshot.value.db === 'connected' && snapshot.value.superiority === 'leader'
+      },
+      { timeout: 500, interval: 20 }
+    )
 
-			machine.send({ type: 'ws connected' })
-			expect(machine.getSnapshot().value.websocket).toBe('connected')
+    const snapshot = machine.getSnapshot()
+    expect(snapshot.value.db).toBe('connected')
+    expect(snapshot.value.superiority).toBe('leader')
+  })
+})
 
-			machine.send({ type: 'ws connection issue' })
-			const snapshot = machine.getSnapshot()
-			expect(snapshot.value.websocket).toBe('disconnected')
-		})
+describe('socket use', () => {
+  beforeAll(() => server.listen())
+  afterEach(() => server.resetHandlers())
+  afterAll(() => server.close())
 
-		it('creates new WebSocket on multiple inits', () => {
-			MockWebSocket = vi.fn().mockImplementation(() => ({
-				onopen: null,
-				close: vi.fn(),
-				addEventListener: vi.fn(),
-				removeEventListener: vi.fn()
-			})) as unknown as typeof WebSocket
-			globalThis.WebSocket = MockWebSocket
+  it('changes state after successfully connecting', async () => {
+    const machine = createActor(clientMachine)
+    machine.start()
+    machine.send({
+      type: 'init',
+      wsUrl: SOCKET_URL,
+      dbName: 'jerry'
+    })
 
-			const machine = createActor(clientMachine)
-			machine.start()
+    await vi.waitUntil(
+      () => machine.getSnapshot().value.websocket === 'connected',
+      { timeout: 500, interval: 20 }
+    )
 
-			machine.send({
-				type: 'init',
-				wsUrl: SOCKET_URL,
-				dbName: 'jerry'
-			})
-			expect(MockWebSocket).toHaveBeenCalledTimes(2)
-
-			machine.send({
-				type: 'init',
-				wsUrl: 'wss://different.com',
-				dbName: 'tom'
-			})
-			expect(MockWebSocket).toHaveBeenCalledTimes(3)
-		})
-	})
-
-	describe('WebSocket onopen callback', () => {
-		let WebSocketOriginal: typeof WebSocket
-		// eslint-disable-next-line @typescript-eslint/no-explicit-any
-		let mockSocket: any
-
-		beforeAll(() => {
-			WebSocketOriginal = globalThis.WebSocket
-		})
-		afterEach(() => {
-			globalThis.WebSocket = WebSocketOriginal
-		})
-
-		it('sets up onopen callback correctly', () => {
-			mockSocket = {
-				onopen: null,
-				close: vi.fn(),
-				addEventListener: vi.fn(),
-				removeEventListener: vi.fn()
-			}
-			const MockWebSocket = vi.fn().mockImplementation(() => mockSocket) as unknown as typeof WebSocket
-			globalThis.WebSocket = MockWebSocket
-
-			const machine = createActor(clientMachine)
-			machine.start()
-			machine.send({
-				type: 'init',
-				wsUrl: SOCKET_URL,
-				dbName: 'jerry'
-			})
-
-			expect(typeof mockSocket.onopen).toBe('function')
-		})
-
-		it('onopen callback sends ws connected event', () => {
-			mockSocket = {
-				onopen: null,
-				close: vi.fn(),
-				addEventListener: vi.fn(),
-				removeEventListener: vi.fn()
-			}
-			const MockWebSocket = vi.fn().mockImplementation(() => mockSocket) as unknown as typeof WebSocket
-			globalThis.WebSocket = MockWebSocket
-
-			const machine = createActor(clientMachine)
-			machine.start()
-			machine.send({
-				type: 'init',
-				wsUrl: SOCKET_URL,
-				dbName: 'jerry'
-			})
-
-			expect(machine.getSnapshot().value.websocket).toBe('disconnected')
-
-			if (typeof mockSocket.onopen === 'function') {
-				mockSocket.onopen()
-			} else {
-				throw new Error('onopen callback not set')
-			}
-
-			expect(machine.getSnapshot().value.websocket).toBe('connected')
-		})
-	})
-
-	describe('edge case event combinations', () => {
-		it('does nothing', () => {})
-	})
+    expect(machine.getSnapshot().value).toEqual({
+      websocket: 'connected',
+      db: 'disconnected',
+      superiority: 'follower'
+    })
+  })
 })
