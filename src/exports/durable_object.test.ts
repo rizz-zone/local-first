@@ -75,9 +75,9 @@ describe('createDurableObject', () => {
     });
 
     it('should ignore constructor arguments gracefully', () => {
-      // @ts-ignore - testing runtime behavior with extra args
+      // @ts-expect-error - testing runtime behavior with extra args
       expect(() => new DurableObjectClass('arg1', 'arg2', 123)).not.toThrow();
-      // @ts-ignore - testing runtime behavior with extra args
+      // @ts-expect-error - testing runtime behavior with extra args
       const instance = new DurableObjectClass('arg1', 'arg2', 123);
       expect(instance.getB()).toBe(10);
     });
@@ -103,7 +103,7 @@ describe('createDurableObject', () => {
     });
 
     it('should fail when called without new operator', () => {
-      // @ts-ignore - testing runtime behavior
+      // @ts-expect-error - testing runtime behavior
       expect(() => DurableObjectClass()).toThrow();
     });
   });
@@ -157,9 +157,9 @@ describe('createDurableObject', () => {
     });
 
     it('should not accept arguments', () => {
-      // @ts-ignore - testing runtime behavior with extra args
+      // @ts-expect-error - testing runtime behavior with extra args
       expect(() => instance.getB('arg1', 'arg2')).not.toThrow();
-      // @ts-ignore - testing runtime behavior with extra args
+      // @ts-expect-error - testing runtime behavior with extra args
       expect(instance.getB('arg1', 'arg2')).toBe(10);
     });
   });
@@ -172,9 +172,9 @@ describe('createDurableObject', () => {
     });
 
     it('should not be directly accessible from outside', () => {
-      // @ts-ignore - testing private field access
+      // @ts-expect-error - testing private field access
       expect(instance.b).toBeUndefined();
-      // @ts-ignore - testing private field access
+      // @ts-expect-error - testing private field access
       expect(instance['#b']).toBeUndefined();
     });
 
@@ -221,8 +221,8 @@ describe('createDurableObject', () => {
       expect(instance3.getB()).toBe(10);
       
       // Values should be independent (though we can't modify them in this implementation)
-      expect(instance1.getB()).not.toBe(instance2);
-      expect(instance1.getB()).not.toBe(instance3);
+      expect(instance1.getB()).not.toBe(instance2.getB());
+      expect(instance1.getB()).not.toBe(instance3.getB());
     });
   });
 
@@ -269,7 +269,7 @@ describe('createDurableObject', () => {
       expect(instance.getB()).toBe(10);
       
       // New method should be available
-      // @ts-ignore - testing dynamic property
+      // @ts-expect-error - testing dynamic property
       expect(instance.newMethod()).toBe('test');
     });
 

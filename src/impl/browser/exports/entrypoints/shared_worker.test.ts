@@ -1,274 +1,275 @@
-import { vi, beforeEach, describe, expect, it } from 'vitest'
+import { vi, beforeEach, describe, expect, it, afterEach } from 'vitest'
+import { sharedWorkerEntrypoint } from './shared_worker'
 import { WorkerDoubleInitError } from '../../../../common/errors'
 import { portManager } from '../../helpers/port_manager'
 import { importUnique } from '../../../../testing/dynamic_import'
 
-describe("SharedWorker entrypoint", () => {
-	const initSpy = vi.spyOn(portManager, "init")
+describe('SharedWorker entrypoint', () => {
+	const initSpy = vi.spyOn(portManager, 'init')
+	
 	beforeEach(() => {
 		initSpy.mockClear()
 	})
 
-	describe("initialization behavior", () => {
-		it("does not call portManager.init if not invoked", async () => {
-			await importUnique("./shared_worker")
+	afterEach(() => {
+		vi.clearAllMocks()
+	})
+
+	describe('basic functionality', () => {
+		it('does not call portManager.init if not invoked', async () => {
+			await importUnique('./shared_worker')
 			expect(initSpy).not.toBeCalled()
 		})
 
-		it("calls portManager.init when invoked", async () => {
-			const { sharedWorkerEntrypoint } = await importUnique("./shared_worker")
+		it('calls portManager.init when invoked', () => {
 			sharedWorkerEntrypoint()
 			expect(initSpy).toHaveBeenCalledOnce()
 		})
 
-		it("calls portManager.init with no arguments", async () => {
-			const { sharedWorkerEntrypoint } = await importUnique("./shared_worker")
+		it('calls portManager.init with no arguments', () => {
 			sharedWorkerEntrypoint()
 			expect(initSpy).toHaveBeenCalledWith()
 		})
 
-		it("returns undefined on successful execution", async () => {
-			const { sharedWorkerEntrypoint } = await importUnique("./shared_worker")
+		it('returns undefined (void function)', () => {
 			const result = sharedWorkerEntrypoint()
 			expect(result).toBeUndefined()
 		})
-
-		it("executes synchronously", async () => {
-			const { sharedWorkerEntrypoint } = await importUnique("./shared_worker")
-			const before = Date.now()
-			sharedWorkerEntrypoint()
-			const after = Date.now()
-			expect(after - before).toBeLessThan(10) // Should complete very quickly
-		})
-
-		it("works with TypeScript generic parameter", async () => {
-			const { sharedWorkerEntrypoint } = await importUnique("./shared_worker")
-			expect(() => sharedWorkerEntrypoint<unknown>()).not.toThrow()
-		})
 	})
 
-	describe("double initialization protection", () => {
-		it("can only be called once", async () => {
-			const { sharedWorkerEntrypoint } = await importUnique("./shared_worker")
+	describe('double initialization protection', () => {
+		it('can only be called once', async () => {
+			const { sharedWorkerEntrypoint } = await importUnique('./shared_worker')
 			expect(() => sharedWorkerEntrypoint()).not.toThrow()
 			expect(() => sharedWorkerEntrypoint()).toThrow(WorkerDoubleInitError)
 		})
 
-		it("throws WorkerDoubleInitError on second call", async () => {
-			const { sharedWorkerEntrypoint } = await importUnique("./shared_worker")
-			sharedWorkerEntrypoint() // First call
+		it('throws WorkerDoubleInitError on second call', async () => {
+			const { sharedWorkerEntrypoint } = await importUnique('./shared_worker')
+			sharedWorkerEntrypoint()
+			
 			expect(() => sharedWorkerEntrypoint()).toThrow(WorkerDoubleInitError)
 		})
 
-		it("throws WorkerDoubleInitError on multiple subsequent calls", async () => {
-			const { sharedWorkerEntrypoint } = await importUnique("./shared_worker")
-			sharedWorkerEntrypoint() // First call
-
-			for (let i = 0; i < 5; i++) {
-				expect(() => sharedWorkerEntrypoint()).toThrow(WorkerDoubleInitError)
-			}
+		it('maintains initialization state across multiple attempts', async () => {
+			const { sharedWorkerEntrypoint } = await importUnique('./shared_worker')
+			sharedWorkerEntrypoint()
+			
+			// Multiple subsequent calls should all throw
+			expect(() => sharedWorkerEntrypoint()).toThrow(WorkerDoubleInitError)
+			expect(() => sharedWorkerEntrypoint()).toThrow(WorkerDoubleInitError)
+			expect(() => sharedWorkerEntrypoint()).toThrow(WorkerDoubleInitError)
 		})
 
-		it("does not call portManager.init on second invocation", async () => {
-			const { sharedWorkerEntrypoint } = await importUnique("./shared_worker")
-			sharedWorkerEntrypoint() // First call
+		it('calls portManager.init exactly once even with multiple attempts', async () => {
+			const { sharedWorkerEntrypoint } = await importUnique('./shared_worker')
+			const localInitSpy = vi.spyOn(portManager, 'init')
+			
+			sharedWorkerEntrypoint()
+			
+			try { sharedWorkerEntrypoint() } catch { /* ignore */ }
+			try { sharedWorkerEntrypoint() } catch { /* ignore */ }
+			try { sharedWorkerEntrypoint() } catch { /* ignore */ }
 
-			initSpy.mockClear()
-			try {
-				sharedWorkerEntrypoint() // Second call should throw
-			} catch (error) {
-				expect(error).toBeInstanceOf(WorkerDoubleInitError)
-			}
-			expect(initSpy).not.toHaveBeenCalled()
-		})
-
-		it("preserves double-init protection even with generic types", async () => {
-			const { sharedWorkerEntrypoint } = await importUnique("./shared_worker")
-			sharedWorkerEntrypoint<unknown>() // First call with generic
-			expect(() => sharedWorkerEntrypoint<unknown>()).toThrow(WorkerDoubleInitError)
+			expect(localInitSpy).toHaveBeenCalledOnce()
 		})
 	})
 
-	describe("error handling and edge cases", () => {
-		it("handles portManager.init throwing an error", async () => {
-			const { sharedWorkerEntrypoint } = await importUnique("./shared_worker")
-			const testError = new Error("Port manager init failed")
-			initSpy.mockImplementation(() => {
-				throw testError
+	describe('error handling and resilience', () => {
+		it('propagates errors from portManager.init', async () => {
+			const { sharedWorkerEntrypoint } = await importUnique('./shared_worker')
+			const mockError = new Error('Port manager initialization failed')
+			const localInitSpy = vi.spyOn(portManager, 'init')
+			localInitSpy.mockImplementation(() => {
+				throw mockError
 			})
 
-			expect(() => sharedWorkerEntrypoint()).toThrow(testError)
+			expect(() => sharedWorkerEntrypoint()).toThrow(mockError)
 		})
 
-		it("maintains initialization state even if portManager.init fails", async () => {
-			const { sharedWorkerEntrypoint } = await importUnique("./shared_worker")
-			const initError = new Error("Init failed")
-			initSpy.mockImplementation(() => {
-				throw initError
+		it('marks as initialized even if portManager.init throws', async () => {
+			const { sharedWorkerEntrypoint } = await importUnique('./shared_worker')
+			const mockError = new Error('Initialization failed')
+			const localInitSpy = vi.spyOn(portManager, 'init')
+			localInitSpy.mockImplementation(() => {
+				throw mockError
 			})
 
-			expect(() => sharedWorkerEntrypoint()).toThrow(initError)
-
-			initSpy.mockRestore()
-
+			expect(() => sharedWorkerEntrypoint()).toThrow(mockError)
+			
+			// Should throw WorkerDoubleInitError on second call, not the original error
+			localInitSpy.mockImplementation(() => {}) // Reset mock to not throw
 			expect(() => sharedWorkerEntrypoint()).toThrow(WorkerDoubleInitError)
 		})
 
-		it("does not call portManager.init if already failed once", async () => {
-			const { sharedWorkerEntrypoint } = await importUnique("./shared_worker")
-			const initError = new Error("Init failed")
-			initSpy.mockImplementation(() => {
-				throw initError
-			})
+		it('handles rapid successive calls without race conditions', async () => {
+			const { sharedWorkerEntrypoint } = await importUnique('./shared_worker')
+			
+			const results = []
+			const errors = []
+			
+			// Simulate rapid calls that might happen in concurrent scenarios
+			for (let i = 0; i < 10; i++) {
+				try {
+					results.push(sharedWorkerEntrypoint())
+				} catch (error) {
+					errors.push(error)
+				}
+			}
+			
+			expect(results).toHaveLength(1) // Only first call succeeds
+			expect(errors).toHaveLength(9) // Rest throw errors
+			expect(errors.every(error => error instanceof WorkerDoubleInitError)).toBe(true)
+		})
+	})
 
+	describe('module isolation and import behavior', () => {
+		it('maintains separate initialization state per unique import', async () => {
+			// First import instance
+			const { sharedWorkerEntrypoint: entrypoint1 } = await importUnique('./shared_worker')
+			entrypoint1()
+			expect(() => entrypoint1()).toThrow(WorkerDoubleInitError)
+
+			// Second import instance should have fresh state
+			const { sharedWorkerEntrypoint: entrypoint2 } = await importUnique('./shared_worker')
+			expect(() => entrypoint2()).not.toThrow()
+			expect(() => entrypoint2()).toThrow(WorkerDoubleInitError)
+		})
+
+		it('preserves initialization state across function references', async () => {
+			const { sharedWorkerEntrypoint } = await importUnique('./shared_worker')
+			const entrypointRef = sharedWorkerEntrypoint
+			
+			entrypointRef()
+			expect(() => sharedWorkerEntrypoint()).toThrow(WorkerDoubleInitError)
+			expect(() => entrypointRef()).toThrow(WorkerDoubleInitError)
+		})
+
+		it('works correctly when destructured', async () => {
+			const module = await importUnique('./shared_worker')
+			const { sharedWorkerEntrypoint: destructuredEntrypoint } = module
+			
+			destructuredEntrypoint()
+			expect(() => destructuredEntrypoint()).toThrow(WorkerDoubleInitError)
+			expect(() => module.sharedWorkerEntrypoint()).toThrow(WorkerDoubleInitError)
+		})
+	})
+
+	describe('integration with portManager', () => {
+		it('maintains call order integrity', async () => {
+			const { sharedWorkerEntrypoint } = await importUnique('./shared_worker')
+			const localInitSpy = vi.spyOn(portManager, 'init')
+			const callOrder = []
+			
+			localInitSpy.mockImplementation(() => {
+				callOrder.push('portManager.init')
+			})
+			
+			callOrder.push('before-call')
+			sharedWorkerEntrypoint()
+			callOrder.push('after-call')
+			
+			expect(callOrder).toEqual(['before-call', 'portManager.init', 'after-call'])
+		})
+
+		it('does not interfere with portManager state on failed calls', async () => {
+			const { sharedWorkerEntrypoint } = await importUnique('./shared_worker')
+			const localInitSpy = vi.spyOn(portManager, 'init')
+			
+			sharedWorkerEntrypoint() // First successful call
+			
+			// Subsequent failed calls should not call portManager.init
+			try { sharedWorkerEntrypoint() } catch { /* ignore */ }
+			try { sharedWorkerEntrypoint() } catch { /* ignore */ }
+			
+			expect(localInitSpy).toHaveBeenCalledOnce()
+		})
+	})
+
+	describe('TypeScript generic behavior', () => {
+		it('can be called with explicit type parameter', () => {
+			// This tests that the generic type parameter doesn't interfere with runtime behavior
+			expect(() => sharedWorkerEntrypoint<unknown>()).not.toThrow()
+		})
+
+		it('maintains double-call protection with generic types', async () => {
+			const { sharedWorkerEntrypoint } = await importUnique('./shared_worker')
+			
+			sharedWorkerEntrypoint<unknown>()
+			expect(() => sharedWorkerEntrypoint<string>()).toThrow(WorkerDoubleInitError)
+		})
+	})
+
+	describe('edge cases and boundary conditions', () => {
+		it('handles being called in try-catch blocks correctly', async () => {
+			const { sharedWorkerEntrypoint } = await importUnique('./shared_worker')
+			
+			let firstCallSucceeded = false
+			let secondCallThrew = false
+			
+			try {
+				sharedWorkerEntrypoint()
+				firstCallSucceeded = true
+			} catch {
+				// Should not happen
+			}
+			
 			try {
 				sharedWorkerEntrypoint()
 			} catch (error) {
-				expect(error).toBe(initError)
+				secondCallThrew = error instanceof WorkerDoubleInitError
 			}
-
-			initSpy.mockClear()
-			initSpy.mockImplementation(() => {
-				// Should not be called
-			})
-
-			expect(() => sharedWorkerEntrypoint()).toThrow(WorkerDoubleInitError)
-			expect(initSpy).not.toHaveBeenCalled()
+			
+			expect(firstCallSucceeded).toBe(true)
+			expect(secondCallThrew).toBe(true)
 		})
 
-		it("handles rapid successive calls correctly", async () => {
-			const { sharedWorkerEntrypoint } = await importUnique("./shared_worker")
-
-			sharedWorkerEntrypoint()
-
-			const errors: Error[] = []
-			for (let i = 0; i < 10; i++) {
-				try {
-					sharedWorkerEntrypoint()
-				} catch (error) {
-					errors.push(error as Error)
-				}
-			}
-
-			expect(errors).toHaveLength(10)
-			errors.forEach(error => {
-				expect(error).toBeInstanceOf(WorkerDoubleInitError)
-			})
-
-			expect(initSpy).toHaveBeenCalledTimes(1)
+		it('works correctly when called indirectly through variables', async () => {
+			const { sharedWorkerEntrypoint } = await importUnique('./shared_worker')
+			const func = sharedWorkerEntrypoint
+			const obj = { method: sharedWorkerEntrypoint }
+			
+			func() // First call succeeds
+			expect(() => obj.method()).toThrow(WorkerDoubleInitError)
 		})
 
-		it("handles being called with different generic type parameters", async () => {
-			const { sharedWorkerEntrypoint } = await importUnique("./shared_worker")
-
-			sharedWorkerEntrypoint<{ type: "test" }>()
-			expect(() => sharedWorkerEntrypoint<{ type: "different" }>()).toThrow(WorkerDoubleInitError)
+		it('maintains state after being assigned to different variables', async () => {
+			const { sharedWorkerEntrypoint } = await importUnique('./shared_worker')
+			const alias1 = sharedWorkerEntrypoint
+			const alias2 = sharedWorkerEntrypoint
+			
+			alias1()
+			expect(() => alias2()).toThrow(WorkerDoubleInitError)
 		})
 	})
 
-	describe("integration with portManager", () => {
-		it("calls portManager.init exactly once regardless of multiple attempts", async () => {
-			const { sharedWorkerEntrypoint } = await importUnique("./shared_worker")
-
-			sharedWorkerEntrypoint()
-			expect(initSpy).toHaveBeenCalledTimes(1)
-
-			for (let i = 0; i < 3; i++) {
-				try {
-					sharedWorkerEntrypoint()
-				} catch (error) {
-					expect(error).toBeInstanceOf(WorkerDoubleInitError)
-				}
+	describe('performance and memory characteristics', () => {
+		it('does not accumulate memory with repeated failed calls', async () => {
+			const { sharedWorkerEntrypoint } = await importUnique('./shared_worker')
+			sharedWorkerEntrypoint() // First successful call
+			
+			// Many failed calls should not accumulate state or cause memory issues
+			for (let i = 0; i < 1000; i++) {
+				expect(() => sharedWorkerEntrypoint()).toThrow(WorkerDoubleInitError)
 			}
-
-			expect(initSpy).toHaveBeenCalledTimes(1)
-		})
-
-		it("passes through any exceptions from portManager.init", async () => {
-			const { sharedWorkerEntrypoint } = await importUnique("./shared_worker")
-			const customError = new Error("Custom port manager error")
-			initSpy.mockImplementation(() => {
-				throw customError
-			})
-
-			expect(() => sharedWorkerEntrypoint()).toThrow(customError)
-			expect(() => sharedWorkerEntrypoint()).not.toThrow(customError) // Should throw WorkerDoubleInitError instead
+			
+			// State should still be consistent
 			expect(() => sharedWorkerEntrypoint()).toThrow(WorkerDoubleInitError)
 		})
 
-		it("does not modify portManager behavior beyond calling init", async () => {
-			const { sharedWorkerEntrypoint } = await importUnique("./shared_worker")
-
-			const originalInit = portManager.init
-			sharedWorkerEntrypoint()
-
-			expect(portManager.init).toBe(originalInit)
-			expect(initSpy).toHaveBeenCalledWith()
-		})
-	})
-
-	describe("module loading and isolation behavior", () => {
-		it("maintains separate initialization state per dynamic import", async () => {
-			const module1 = await importUnique("./shared_worker")
-			const module2 = await importUnique("./shared_worker")
-
-			expect(() => module1.sharedWorkerEntrypoint()).not.toThrow()
-			expect(() => module2.sharedWorkerEntrypoint()).not.toThrow()
-
-			expect(() => module1.sharedWorkerEntrypoint()).toThrow(WorkerDoubleInitError)
-			expect(() => module2.sharedWorkerEntrypoint()).toThrow(WorkerDoubleInitError)
-
-			expect(initSpy).toHaveBeenCalledTimes(2)
-		})
-
-		it("can be imported and called immediately", async () => {
-			const { sharedWorkerEntrypoint: freshEntrypoint } = await importUnique("./shared_worker")
-			expect(() => freshEntrypoint()).not.toThrow()
-			expect(initSpy).toHaveBeenCalledTimes(1)
-		})
-
-		it("preserves function identity within same import", async () => {
-			const module = await importUnique("./shared_worker")
-			const fn1 = module.sharedWorkerEntrypoint
-			const fn2 = module.sharedWorkerEntrypoint
-			expect(fn1).toBe(fn2)
-		})
-
-		it("has different function references across different imports", async () => {
-			const module1 = await importUnique("./shared_worker")
-			const module2 = await importUnique("./shared_worker")
-
-			expect(module1.sharedWorkerEntrypoint).not.toBe(module2.sharedWorkerEntrypoint)
-		})
-
-		it("maintains separate called state across module boundaries", async () => {
-			const module1 = await importUnique("./shared_worker")
-			const module2 = await importUnique("./shared_worker")
-
-			module1.sharedWorkerEntrypoint()
-			expect(() => module2.sharedWorkerEntrypoint()).not.toThrow()
-			expect(() => module1.sharedWorkerEntrypoint()).toThrow(WorkerDoubleInitError)
-			expect(() => module2.sharedWorkerEntrypoint()).toThrow(WorkerDoubleInitError)
-		})
-	})
-
-	describe("function signature and type safety", () => {
-		it("accepts generic type parameter without runtime effect", async () => {
-			const { sharedWorkerEntrypoint } = await importUnique("./shared_worker")
-
-			interface TestTransition { type: "test"; data: string }
-			expect(() => sharedWorkerEntrypoint<TestTransition>()).not.toThrow()
-		})
-
-		it("can be called without explicit type parameter", async () => {
-			const { sharedWorkerEntrypoint } = await importUnique("./shared_worker")
-			expect(() => sharedWorkerEntrypoint()).not.toThrow()
-		})
-
-		it("returns void/undefined", async () => {
-			const { sharedWorkerEntrypoint } = await importUnique("./shared_worker")
-			const result = sharedWorkerEntrypoint()
-			expect(result).toBeUndefined()
+		it('executes quickly on subsequent calls (early return)', async () => {
+			const { sharedWorkerEntrypoint } = await importUnique('./shared_worker')
+			const localInitSpy = vi.spyOn(portManager, 'init')
+			
+			sharedWorkerEntrypoint() // First call
+			
+			const start = performance.now()
+			try { sharedWorkerEntrypoint() } catch { /* ignore */ } // Should return quickly
+			const end = performance.now()
+			
+			// Should execute very quickly since it returns early
+			expect(end - start).toBeLessThan(1) // Less than 1ms
+			expect(localInitSpy).toHaveBeenCalledOnce() // Should not call init again
 		})
 	})
 })

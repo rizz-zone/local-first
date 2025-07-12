@@ -1,29 +1,20 @@
-mport type { Transition } from './types/transitions/Transition'
+import type { Transition } from './types/transitions/Transition'
 import { describe, expect, it } from 'vitest'
-mport type { Transition } from './types/transitions/Transition'
-import {
-mport type { Transition } from './types/transitions/Transition'
-	BrowserLocalFirst as IndexBrowserLocalFirst,
-mport type { Transition } from './types/transitions/Transition'
-	createDurableObject as IndexCreateDurableObject,
-mport type { Transition } from './types/transitions/Transition'
-	sharedWorkerEntrypoint as IndexSharedWorkerEntrypoint,
-mport type { Transition } from './types/transitions/Transition'
-	workerEntrypoint as IndexWorkerEntrypoint
-mport type { Transition } from './types/transitions/Transition'
-} from './'
-import * as ErrorExports from './common/errors'
-mport type { Transition } from './types/transitions/Transition'
-import { BrowserLocalFirst } from './impl/browser/exports/browser'
-mport type { Transition } from './types/transitions/Transition'
-import { createDurableObject } from './impl/do/exports/durable_object'
-mport type { Transition } from './types/transitions/Transition'
-import { sharedWorkerEntrypoint } from './impl/browser/exports/entrypoints/shared_worker'
-mport type { Transition } from './types/transitions/Transition'
-import { workerEntrypoint } from './impl/browser/exports/entrypoints/worker'
-mport type { Transition } from './types/transitions/Transition'
 
-mport type { Transition } from './types/transitions/Transition'
+import {
+	BrowserLocalFirst as IndexBrowserLocalFirst,
+	createDurableObject as IndexCreateDurableObject,
+	sharedWorkerEntrypoint as IndexSharedWorkerEntrypoint,
+	workerEntrypoint as IndexWorkerEntrypoint
+} from './'
+
+import * as ErrorExports from './common/errors'
+
+import { BrowserLocalFirst } from './impl/browser/exports/browser'
+import { createDurableObject } from './impl/do/exports/durable_object'
+import { sharedWorkerEntrypoint } from './impl/browser/exports/entrypoints/shared_worker'
+import { workerEntrypoint } from './impl/browser/exports/entrypoints/worker'
+
 describe('main entrypoint', () => {
 
 	// Test that all exports exist and are defined
@@ -149,7 +140,7 @@ describe('main entrypoint', () => {
 		const DurableClass = IndexCreateDurableObject()
 		expect(typeof DurableClass).toBe('function')
 		expect(DurableClass.prototype).toBeDefined()
-		
+
 		// Test that the returned class can be instantiated
 		const instance = new DurableClass()
 		expect(instance).toBeInstanceOf(DurableClass)
@@ -181,7 +172,7 @@ describe('main entrypoint', () => {
 		const sharedIndexKeys = Object.getOwnPropertyNames(IndexSharedWorkerEntrypoint)
 		const sharedDirectKeys = Object.getOwnPropertyNames(sharedWorkerEntrypoint)
 		expect(sharedIndexKeys.sort()).toEqual(sharedDirectKeys.sort())
-		
+
 		const workerIndexKeys = Object.getOwnPropertyNames(IndexWorkerEntrypoint)
 		const workerDirectKeys = Object.getOwnPropertyNames(workerEntrypoint)
 		expect(workerIndexKeys.sort()).toEqual(workerDirectKeys.sort())
@@ -189,11 +180,10 @@ describe('main entrypoint', () => {
 
 	// Test descriptors for exports
 	it('ensures property descriptors match for all exports', () => {
-		// Test that function properties have same descriptors
 		const indexBrowserDesc = Object.getOwnPropertyDescriptor(IndexBrowserLocalFirst, 'prototype')
 		const directBrowserDesc = Object.getOwnPropertyDescriptor(BrowserLocalFirst, 'prototype')
 		expect(indexBrowserDesc).toEqual(directBrowserDesc)
-		
+
 		const indexCreateDesc = Object.getOwnPropertyDescriptor(IndexCreateDurableObject, 'length')
 		const directCreateDesc = Object.getOwnPropertyDescriptor(createDurableObject, 'length')
 		expect(indexCreateDesc).toEqual(directCreateDesc)
@@ -216,12 +206,10 @@ describe('main entrypoint', () => {
 
 	// Test class-specific behavior
 	it('ensures BrowserLocalFirst can be used as a constructor', () => {
-		// This should throw due to missing required parameters, but in a predictable way
 		expect(() => {
 			// @ts-expect-error - Testing error behavior
 			new IndexBrowserLocalFirst()
 		}).toThrow()
-		
 		expect(() => {
 			// @ts-expect-error - Testing error behavior
 			new BrowserLocalFirst()
@@ -238,7 +226,7 @@ describe('main entrypoint', () => {
 	// Test that prototype chains are intact
 	it('ensures prototype chains are preserved', () => {
 		expect(IndexBrowserLocalFirst.prototype).toBe(BrowserLocalFirst.prototype)
-		
+
 		const IndexDurableClass = IndexCreateDurableObject()
 		const DirectDurableClass = createDurableObject()
 		expect(Object.getPrototypeOf(IndexDurableClass.prototype)).toEqual(
@@ -254,50 +242,31 @@ describe('main entrypoint', () => {
 			.filter(key => Object.getOwnPropertyDescriptor(BrowserLocalFirst, key)?.enumerable)
 		expect(indexEnumerable.sort()).toEqual(directEnumerable.sort())
 	})
-mport type { Transition } from './types/transitions/Transition'
+
+	// Ensure exports match
 	it('exports the same BrowserLocalFirst as browser.ts', () => {
-mport type { Transition } from './types/transitions/Transition'
 		expect(IndexBrowserLocalFirst).toStrictEqual(BrowserLocalFirst)
-mport type { Transition } from './types/transitions/Transition'
 	})
-mport type { Transition } from './types/transitions/Transition'
 
-mport type { Transition } from './types/transitions/Transition'
 	it('exports the same createDurableObject as durable_object.ts', () => {
-mport type { Transition } from './types/transitions/Transition'
 		expect(IndexCreateDurableObject).toStrictEqual(createDurableObject)
-mport type { Transition } from './types/transitions/Transition'
 	})
-mport type { Transition } from './types/transitions/Transition'
 
-mport type { Transition } from './types/transitions/Transition'
 	it('exports the same sharedWorkerEntrypoint as shared_worker.ts', () => {
-mport type { Transition } from './types/transitions/Transition'
 		expect(IndexSharedWorkerEntrypoint).toStrictEqual(sharedWorkerEntrypoint)
-mport type { Transition } from './types/transitions/Transition'
 	})
-mport type { Transition } from './types/transitions/Transition'
 
-mport type { Transition } from './types/transitions/Transition'
 	it('exports the same workerEntrypoint as worker.ts', () => {
-mport type { Transition } from './types/transitions/Transition'
 		expect(IndexWorkerEntrypoint).toStrictEqual(workerEntrypoint)
-mport type { Transition } from './types/transitions/Transition'
 	})
-mport type { Transition } from './types/transitions/Transition'
 })
 
 describe('error exports', () => {
 	it('exports all errors from common/errors', () => {
-		// This is a dynamic import test - we'll check that error exports exist
-		// Import the main index and check if it has the expected error exports
 		const indexModule = require('./index')
 		const errorModule = require('./common/errors')
-		
-		// Get all exports from error module
+
 		const errorExportNames = Object.keys(errorModule)
-		
-		// Ensure each error export is available from the index
 		errorExportNames.forEach(exportName => {
 			expect(indexModule[exportName]).toBeDefined()
 			expect(indexModule[exportName]).toBe(errorModule[exportName])
@@ -307,11 +276,9 @@ describe('error exports', () => {
 	it('preserves error constructor behavior', () => {
 		const indexModule = require('./index')
 		const errorModule = require('./common/errors')
-		
 		Object.keys(errorModule).forEach(exportName => {
 			const IndexError = indexModule[exportName]
 			const DirectError = errorModule[exportName]
-			
 			if (typeof IndexError === 'function' && IndexError.prototype) {
 				expect(IndexError.prototype.constructor).toBe(DirectError.prototype.constructor)
 			}
@@ -321,10 +288,8 @@ describe('error exports', () => {
 	it('error exports have correct types', () => {
 		const indexModule = require('./index')
 		const errorModule = require('./common/errors')
-		
 		Object.keys(errorModule).forEach(exportName => {
 			expect(typeof indexModule[exportName]).toBe(typeof errorModule[exportName])
 		})
 	})
 })
-
