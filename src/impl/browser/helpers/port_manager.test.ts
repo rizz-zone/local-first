@@ -1,5 +1,5 @@
 /// <reference lib="webworker" />
-/* eslint-disable @typescript-eslint/no-explicit-any, prettier/prettier */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 import {
 	afterEach,
