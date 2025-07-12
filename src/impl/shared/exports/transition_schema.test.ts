@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { z } from 'zod'
 import { type } from 'arktype'
 import { createTransitionSchema } from './transition_schema'
-import { TransitionImpact } from '../types/transitions/Transition'
+import { TransitionImpact } from '../../../types/transitions/Transition'
 
 describe('createTransitionSchema', () => {
 	it('accepts a regular zod transition schema', () => {

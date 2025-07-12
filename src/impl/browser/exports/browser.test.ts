@@ -1,12 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { BrowserLocalFirst } from './browser'
-import { DB_NAME, SOCKET_URL } from '../testing/constants'
+import { DB_NAME, SOCKET_URL } from '../../../testing/constants'
 import {
 	type UpstreamWorkerMessage,
 	UpstreamWorkerMessageType
-} from '../types/messages/worker/UpstreamWorkerMessage'
-import type { TestingTransition } from '../testing/transitions'
-import { TransitionImpact } from '../types/transitions/Transition'
+} from '../../../types/messages/worker/UpstreamWorkerMessage'
+import type { TestingTransition } from '../../../testing/transitions'
+import { TransitionImpact } from '../../../types/transitions/Transition'
 
 describe('BrowserLocalFirst', () => {
 	describe('Worker', () => {
@@ -81,7 +81,7 @@ describe('BrowserLocalFirst', () => {
 						wsUrl: SOCKET_URL
 					}
 				} satisfies UpstreamWorkerMessage<TestingTransition>)
-				expect(mockWorker.postMessage).toHaveBeenCalledTimes(0)
+				expect(mockWorker.postMessage).not.toBeCalled()
 			})
 			it('sends transitions', () => {
 				const syncEngine = new BrowserLocalFirst<TestingTransition>({
@@ -101,7 +101,7 @@ describe('BrowserLocalFirst', () => {
 						impact: TransitionImpact.LocalOnly
 					}
 				})
-				expect(mockWorker.postMessage).toHaveBeenCalledTimes(0)
+				expect(mockWorker.postMessage).not.toBeCalled()
 			})
 		})
 	})

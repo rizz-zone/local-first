@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from 'vitest'
 import { WorkerLocalFirst } from './worker_thread'
 import type { clientMachine } from '../machines/worker'
 import type { Actor } from 'xstate'
-import { DB_NAME, SOCKET_URL } from '../testing/constants'
+import { DB_NAME, SOCKET_URL } from '../../../testing/constants'
 
 describe('WorkerLocalFirst', () => {
 	describe('machine lifecycle management', () => {
@@ -16,7 +16,8 @@ describe('WorkerLocalFirst', () => {
 			expect(snapshot.status).toEqual('active')
 			expect(snapshot.value).toEqual({
 				websocket: 'disconnected',
-				db: 'disconnected'
+				db: 'disconnected',
+				superiority: 'follower'
 			})
 		})
 		it('should stop the machine if it leaves scope while using using', () => {
