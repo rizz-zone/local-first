@@ -1,4 +1,3 @@
-<fixed_code>
 /// <reference lib="webworker" />
 
 import {
@@ -71,7 +70,6 @@ describe('onconnect', () => {
 	})
 })
 describe('port message listener', ({ skip }) => {
-	// let port: MessagePort
 	let userPort: MessagePort
 	beforeEach(() => {
 		portManager.init()
@@ -79,7 +77,6 @@ describe('port message listener', ({ skip }) => {
 		const channel = new MessageChannel()
 		const testingPort = channel.port1
 		ctx.onconnect(new MessageEvent('connect', { ports: [testingPort] }))
-		// port = testingPort
 		userPort = channel.port2
 	})
 
@@ -95,7 +92,6 @@ describe('port message listener', ({ skip }) => {
 				dbName: DB_NAME
 			}
 		} satisfies UpstreamWorkerMessage<never>)
-		// It'll take a moment for the message to get sent through
 		await vi.waitUntil(() => classInstanceMap.size > 0, {
 			interval: 5,
 			timeout: 500
@@ -116,13 +112,11 @@ describe('WorkerPort comprehensive functionality', () => {
 		portManager.init()
 		if (!ctx.onconnect) return
 		
-		// Set up primary connection
 		const channel = new MessageChannel()
 		const testingPort = channel.port1
 		ctx.onconnect(new MessageEvent('connect', { ports: [testingPort] }))
 		userPort = channel.port2
 		
-		// Set up secondary connection for multi-port testing
 		const secondChannel = new MessageChannel()
 		const secondTestingPort = secondChannel.port1
 		ctx.onconnect(new MessageEvent('connect', { ports: [secondTestingPort] }))
@@ -130,7 +124,6 @@ describe('WorkerPort comprehensive functionality', () => {
 	})
 	
 	afterEach(() => {
-		// Clean up port connections
 		userPort?.close()
 		secondUserPort?.close()
 		// @ts-expect-error Reset static instances for clean test state
@@ -141,7 +134,6 @@ describe('WorkerPort comprehensive functionality', () => {
 
 	describe('message type handling', () => {
 		it('handles Ping messages correctly', async () => {
-			// First initialize the port
 			userPort.postMessage({
 				type: UpstreamWorkerMessageType.Init,
 				data: {
@@ -150,7 +142,6 @@ describe('WorkerPort comprehensive functionality', () => {
 				}
 			} satisfies UpstreamWorkerMessage<never>)
 
-			// Wait for initialization
 			await vi.waitUntil(() => {
 				const instances = 
 					// @ts-expect-error instances is private
@@ -158,7 +149,6 @@ describe('WorkerPort comprehensive functionality', () => {
 				return instances.size > 0
 			}, { interval: 5, timeout: 500 })
 
-			// Send ping message
 			expect(() => {
 				userPort.postMessage({
 					type: UpstreamWorkerMessageType.Ping
@@ -167,7 +157,6 @@ describe('WorkerPort comprehensive functionality', () => {
 		})
 
 		it('handles Transition messages correctly', async () => {
-			// First initialize the port
 			userPort.postMessage({
 				type: UpstreamWorkerMessageType.Init,
 				data: {
@@ -176,7 +165,6 @@ describe('WorkerPort comprehensive functionality', () => {
 				}
 			} satisfies UpstreamWorkerMessage<never>)
 
-			// Wait for initialization
 			await vi.waitUntil(() => {
 				const instances = 
 					// @ts-expect-error instances is private
@@ -184,7 +172,6 @@ describe('WorkerPort comprehensive functionality', () => {
 				return instances.size > 0
 			}, { interval: 5, timeout: 500 })
 
-			// Send transition message
 			expect(() => {
 				userPort.postMessage({
 					type: UpstreamWorkerMessageType.Transition,
@@ -197,7 +184,7 @@ describe('WorkerPort comprehensive functionality', () => {
 			expect(() => {
 				// eslint-disable-next-line @typescript-eslint/no-explicit-any
 				userPort.postMessage({
-					type: 999 as any, // Invalid message type
+					type: 999 as any,
 					data: {}
 				})
 			}).not.toThrow()
@@ -218,13 +205,11 @@ describe('WorkerPort comprehensive functionality', () => {
 				dbName: DB_NAME
 			}
 
-			// Initialize from first port
 			userPort.postMessage({
 				type: UpstreamWorkerMessageType.Init,
 				data: config
 			} satisfies UpstreamWorkerMessage<never>)
 
-			// Initialize from second port with same config
 			secondUserPort.postMessage({
 				type: UpstreamWorkerMessageType.Init,
 				data: config
@@ -235,7 +220,6 @@ describe('WorkerPort comprehensive functionality', () => {
 				timeout: 1000
 			})
 
-			// Should have only one instance but two clients
 			expect(instances.size).toBe(1)
 			expect(clients.get(`${SOCKET_URL}::${DB_NAME}`)).toBe(2)
 		})
@@ -276,7 +260,6 @@ describe('WorkerPort comprehensive functionality', () => {
 		it('throws PortDoubleInitError on duplicate initialization', async () => {
 			consoleErrorMock.mockClear()
 
-			// First initialization
 			userPort.postMessage({
 				type: UpstreamWorkerMessageType.Init,
 				data: {
@@ -292,7 +275,6 @@ describe('WorkerPort comprehensive functionality', () => {
 				return instances.size > 0
 			}, { interval: 5, timeout: 500 })
 
-			// Second initialization should cause error but not crash
 			userPort.postMessage({
 				type: UpstreamWorkerMessageType.Init,
 				data: {
@@ -301,10 +283,8 @@ describe('WorkerPort comprehensive functionality', () => {
 				}
 			} satisfies UpstreamWorkerMessage<never>)
 
-			// Give some time for error to potentially occur
 			await new Promise(resolve => setTimeout(resolve, 50))
 
-			// Port should still be functional for other operations
 			expect(() => {
 				userPort.postMessage({
 					type: UpstreamWorkerMessageType.Ping
@@ -315,14 +295,12 @@ describe('WorkerPort comprehensive functionality', () => {
 
 	describe('timeout and disposal behavior', () => {
 		it('handles timeout disposal mechanism', () => {
-			// Create a port instance
 			const channel = new MessageChannel()
 			const testingPort = channel.port1
 			const testUserPort = channel.port2
 
 			ctx.onconnect?.(new MessageEvent('connect', { ports: [testingPort] }))
 
-			// Send init message
 			testUserPort.postMessage({
 				type: UpstreamWorkerMessageType.Init,
 				data: {
@@ -331,17 +309,14 @@ describe('WorkerPort comprehensive functionality', () => {
 				}
 			} satisfies UpstreamWorkerMessage<never>)
 
-			// Port should be set up correctly
 			expect(testingPort.onmessage).toBeTypeOf('function')
 			expect(testingPort.onmessageerror).toBeTypeOf('function')
 
-			// Close ports
 			testUserPort.close()
 			testingPort.close()
 		})
 
 		it('resets timeout on ping messages', async () => {
-			// Initialize port
 			userPort.postMessage({
 				type: UpstreamWorkerMessageType.Init,
 				data: {
@@ -357,14 +332,12 @@ describe('WorkerPort comprehensive functionality', () => {
 				return instances.size > 0
 			}, { interval: 5, timeout: 500 })
 
-			// Send multiple ping messages to reset timeout
 			for (let i = 0; i < 5; i++) {
 				userPort.postMessage({
 					type: UpstreamWorkerMessageType.Ping
 				} satisfies UpstreamWorkerMessage<never>)
 			}
 
-			// Should not throw any errors
 			expect(true).toBe(true)
 		})
 	})
@@ -394,7 +367,6 @@ describe('WorkerPort comprehensive functionality', () => {
 			expect(instances.size).toBe(1)
 			expect(clients.get(`${SOCKET_URL}::${DB_NAME}`)).toBe(1)
 
-			// Close the port (simulating disposal)
 			userPort.close()
 		})
 
@@ -411,7 +383,6 @@ describe('WorkerPort comprehensive functionality', () => {
 				dbName: DB_NAME
 			}
 
-			// Two ports with same config
 			userPort.postMessage({
 				type: UpstreamWorkerMessageType.Init,
 				data: config
@@ -431,12 +402,7 @@ describe('WorkerPort comprehensive functionality', () => {
 			expect(instances.size).toBe(1)
 			expect(clients.get(instanceKey)).toBe(2)
 
-			// Close one port
 			userPort.close()
-			
-			// Instance should still exist with one client
-			// Note: This would require the actual disposal to be triggered
-			// In real scenarios, this happens when the WorkerPort is garbage collected
 		})
 	})
 
@@ -516,7 +482,6 @@ describe('WorkerPort comprehensive functionality', () => {
 				// @ts-expect-error instances is private
 				__testing__do_not_use_this_ever_or_you_will_have_a_terrible_time_and_also_cause_probably_pretty_major_and_significant_bugs_and_we_wouldnt_want_that_would_we__WorkerPort.instances
 
-			// Send multiple init messages rapidly
 			for (let i = 0; i < 10; i++) {
 				userPort.postMessage({
 					type: UpstreamWorkerMessageType.Init,
@@ -527,18 +492,15 @@ describe('WorkerPort comprehensive functionality', () => {
 				} satisfies UpstreamWorkerMessage<never>)
 			}
 
-			// Wait for processing
 			await vi.waitUntil(() => instances.size > 0, {
 				interval: 5,
 				timeout: 1000
 			})
 
-			// Should have created only one instance (first one wins due to double init protection)
 			expect(instances.size).toBeLessThanOrEqual(10)
 		})
 
 		it('handles concurrent ping and init messages', async () => {
-			// Initialize first
 			userPort.postMessage({
 				type: UpstreamWorkerMessageType.Init,
 				data: {
@@ -554,7 +516,6 @@ describe('WorkerPort comprehensive functionality', () => {
 				return instances.size > 0
 			}, { interval: 5, timeout: 500 })
 
-			// Send rapid ping messages
 			expect(() => {
 				for (let i = 0; i < 20; i++) {
 					userPort.postMessage({
@@ -565,7 +526,6 @@ describe('WorkerPort comprehensive functionality', () => {
 		})
 
 		it('handles mixed message types in rapid succession', async () => {
-			// Initialize
 			userPort.postMessage({
 				type: UpstreamWorkerMessageType.Init,
 				data: {
@@ -581,7 +541,6 @@ describe('WorkerPort comprehensive functionality', () => {
 				return instances.size > 0
 			}, { interval: 5, timeout: 500 })
 
-			// Send mixed messages rapidly
 			expect(() => {
 				for (let i = 0; i < 10; i++) {
 					userPort.postMessage({
@@ -603,7 +562,6 @@ describe('WorkerPort comprehensive functionality', () => {
 				// @ts-expect-error instances is private
 				__testing__do_not_use_this_ever_or_you_will_have_a_terrible_time_and_also_cause_probably_pretty_major_and_significant_bugs_and_we_wouldnt_want_that_would_we__WorkerPort.instances
 
-			// Initialize
 			userPort.postMessage({
 				type: UpstreamWorkerMessageType.Init,
 				data: {
@@ -617,14 +575,12 @@ describe('WorkerPort comprehensive functionality', () => {
 				timeout: 500
 			})
 
-			// Perform many operations
 			for (let i = 0; i < 100; i++) {
 				userPort.postMessage({
 					type: UpstreamWorkerMessageType.Ping
 				} satisfies UpstreamWorkerMessage<never>)
 			}
 
-			// Should still have only one instance
 			expect(instances.size).toBe(1)
 		})
 
@@ -633,9 +589,7 @@ describe('WorkerPort comprehensive functionality', () => {
 				// @ts-expect-error instances is private
 				__testing__do_not_use_this_ever_or_you_will_have_a_terrible_time_and_also_cause_probably_pretty_major_and_significant_bugs_and_we_wouldnt_want_that_would_we__WorkerPort.instances
 
-			// Create connections for many different configurations
 			const numConfigs = 10
-			const connections: Array<{ port: MessagePort; userPort: MessagePort }> = []
 
 			for (let i = 0; i < numConfigs; i++) {
 				const channel = new MessageChannel()
@@ -651,8 +605,6 @@ describe('WorkerPort comprehensive functionality', () => {
 						dbName: `db_${i}`
 					}
 				} satisfies UpstreamWorkerMessage<never>)
-
-				connections.push({ port: testingPort, userPort: testUserPort })
 			}
 
 			await vi.waitUntil(() => instances.size >= numConfigs, {
@@ -661,12 +613,6 @@ describe('WorkerPort comprehensive functionality', () => {
 			})
 
 			expect(instances.size).toBe(numConfigs)
-
-			// Clean up
-			connections.forEach(({ port, userPort }) => {
-				userPort.close()
-				port.close()
-			})
 		})
 	})
 })

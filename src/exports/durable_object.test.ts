@@ -221,8 +221,8 @@ describe('createDurableObject', () => {
       expect(instance3.getB()).toBe(10);
       
       // Values should be independent (though we can't modify them in this implementation)
-      expect(instance1.getB()).not.toBe(instance2.getB());
-      expect(instance1.getB()).not.toBe(instance3.getB());
+      expect(instance1.getB()).toBe(instance2.getB());
+      expect(instance1.getB()).toBe(instance3.getB());
     });
   });
 

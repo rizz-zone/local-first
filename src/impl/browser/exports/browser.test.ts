@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars */
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { BrowserLocalFirst } from './browser'
 import { DB_NAME, SOCKET_URL } from '../../../testing/constants'
@@ -390,7 +389,7 @@ describe('BrowserLocalFirst', () => {
 				})
 
 				expect(mockWorker.port.postMessage).toHaveBeenCalledTimes(3)
-				expect(mockWorker.postMessage).not.toHaveBeenCalled()
+				expect(mockWorker.postMessage).not.toBeCalled()
 			})
 		})
 	})
@@ -420,7 +419,7 @@ describe('BrowserLocalFirst', () => {
 
 			expect(regularWorker.postMessage).toHaveBeenCalledOnce()
 			expect(sharedWorker.port.postMessage).toHaveBeenCalledOnce()
-			expect(sharedWorker.postMessage).not.toHaveBeenCalled()
+			expect(sharedWorker.postMessage).not.toBeCalled()
 		})
 
 		it('should handle worker with port property that is not a SharedWorker', () => {
@@ -436,7 +435,7 @@ describe('BrowserLocalFirst', () => {
 			})
 
 			expect(workerWithPort.port.postMessage).toHaveBeenCalledOnce()
-			expect(workerWithPort.postMessage).not.toHaveBeenCalled()
+			expect(workerWithPort.postMessage).not.toBeCalled()
 		})
 
 		it('should handle worker objects with additional properties', () => {
@@ -653,7 +652,7 @@ describe('BrowserLocalFirst', () => {
 
 			expect(regularWorker.postMessage).toHaveBeenCalledTimes(101)
 			expect(sharedWorker.port.postMessage).toHaveBeenCalledTimes(101)
-			expect(sharedWorker.postMessage).not.toHaveBeenCalled()
+			expect(sharedWorker.postMessage).not.toBeCalled()
 		})
 	})
 })

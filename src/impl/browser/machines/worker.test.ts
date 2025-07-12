@@ -446,3 +446,17 @@ describe('leadership and locking behavior', () => {
 
 	it('maintains leader state once acquired', () => {
 		const machine = createActor(clientMachine)
+		machine.start()
+		machine.send({
+			type: 'init',
+			wsUrl: SOCKET_URL,
+			dbName: 'jerry'
+		})
+		machine.send({ type: 'leader lock acquired' })
+		// Try to send another event - should remain in leader state
+		machine.send({ type: 'db connected' })
+
+		const snapshot = machine.getSnapshot()
+		expect(snapshot.value.superiority).toBe('leader')
+	})
+})

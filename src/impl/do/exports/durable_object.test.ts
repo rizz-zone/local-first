@@ -406,7 +406,7 @@ describe('createDurableObject Factory Pattern Integration', () => {
   });
 
   it('should work with mixin patterns', () => {
-    function addLogging<T extends new (...args: any[]) => any>(Base: T) {
+    function addLogging<T extends new (...args: unknown[]) => unknown>(Base: T) {
       return class extends Base {
         private logs: string[] = [];
 

@@ -1,4 +1,3 @@
-import type { Transition } from './types/transitions/Transition'
 import { describe, expect, it } from 'vitest'
 
 import {
@@ -8,6 +7,7 @@ import {
 	workerEntrypoint as IndexWorkerEntrypoint
 } from './'
 
+import * as IndexModule from './'
 import * as ErrorExports from './common/errors'
 
 import { BrowserLocalFirst } from './impl/browser/exports/browser'
@@ -263,8 +263,8 @@ describe('main entrypoint', () => {
 
 describe('error exports', () => {
 	it('exports all errors from common/errors', () => {
-		const indexModule = require('./index')
-		const errorModule = require('./common/errors')
+		const indexModule = IndexModule
+		const errorModule = ErrorExports
 
 		const errorExportNames = Object.keys(errorModule)
 		errorExportNames.forEach(exportName => {
@@ -274,8 +274,8 @@ describe('error exports', () => {
 	})
 
 	it('preserves error constructor behavior', () => {
-		const indexModule = require('./index')
-		const errorModule = require('./common/errors')
+		const indexModule = IndexModule
+		const errorModule = ErrorExports
 		Object.keys(errorModule).forEach(exportName => {
 			const IndexError = indexModule[exportName]
 			const DirectError = errorModule[exportName]
@@ -286,8 +286,8 @@ describe('error exports', () => {
 	})
 
 	it('error exports have correct types', () => {
-		const indexModule = require('./index')
-		const errorModule = require('./common/errors')
+		const indexModule = IndexModule
+		const errorModule = ErrorExports
 		Object.keys(errorModule).forEach(exportName => {
 			expect(typeof indexModule[exportName]).toBe(typeof errorModule[exportName])
 		})

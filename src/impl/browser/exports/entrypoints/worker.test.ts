@@ -240,8 +240,7 @@ describe('Worker entrypoint', () => {
       const errorEvent = new MessageEvent('messageerror', {
         data: 'test error'
       })
-      if (!workerScope.onmessageerror)
-        throw new Error('onmessageerror is not defined')
+      if (!workerScope.onmessageerror) throw new Error('onmessageerror is not defined')
       workerScope.onmessageerror(errorEvent)
 
       expect(consoleErrorSpy).toHaveBeenCalledWith('Message error!')
@@ -285,8 +284,7 @@ describe('Worker entrypoint', () => {
         .mockImplementation(() => {})
       workerEntrypoint()
 
-      if (!workerScope.onmessageerror)
-        throw new Error('onmessageerror is not defined')
+      if (!workerScope.onmessageerror) throw new Error('onmessageerror is not defined')
 
       const errorEvent1 = new MessageEvent('messageerror', { data: 'error 1' })
       const errorEvent2 = new MessageEvent('messageerror', { data: 'error 2' })
