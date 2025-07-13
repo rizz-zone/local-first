@@ -38,3 +38,11 @@ export class AbsentPortDisconnectionError extends Error {
 		Object.setPrototypeOf(this, AbsentPortDisconnectionError.prototype)
 	}
 }
+export class InternalStateError extends Error {
+	constructor(message: string) {
+		super(message)
+		this.name = 'InternalStateError'
+
+		Object.setPrototypeOf(this, InternalStateError.prototype)
+	}
+}

@@ -1,6 +1,10 @@
 /// <reference lib="webworker" />
 
-import { NoPortsError, PortDoubleInitError } from '../../../common/errors'
+import {
+	InternalStateError,
+	NoPortsError,
+	PortDoubleInitError
+} from '../../../common/errors'
 import type { InstanceData } from '../../../types/common/client/InstanceData'
 import type { InstanceKey } from '../../../types/common/client/InstanceKey'
 import {
@@ -9,7 +13,10 @@ import {
 } from '../../../types/messages/worker/UpstreamWorkerMessage'
 import type { Transition } from '../../../types/transitions/Transition'
 import { WorkerLocalFirst } from './worker_thread'
-import { DOUBLE_SHAREDWORKER_PORT_INIT } from '../../../common/errors/messages'
+import {
+	DOUBLE_SHAREDWORKER_PORT_INIT,
+	MAP_DESTRUCTOR_INCONSISTENCY
+} from '../../../common/errors/messages'
 
 const ctx = self as unknown as SharedWorkerGlobalScope
 
@@ -84,13 +91,12 @@ class WorkerPort<TransitionSchema extends Transition> {
 	[Symbol.dispose]() {
 		// Static things get changed first.
 		// If the instance never got created, we don't need to clean it up.
-		if (this.instanceKey) {
+		staticCleanup: if (this.instanceKey) {
 			// Decrease activeInstanceClients or delete the instance.
 			const clients = (
 				this.constructor as typeof WorkerPort
 			).activeInstanceClients.get(this.instanceKey)
-			if (!clients)
-				throw new Error('Instance we tried to disconnect has no clients!')
+			if (!clients) throw new InternalStateError(MAP_DESTRUCTOR_INCONSISTENCY)
 			if (clients === 1) {
 				;(this.constructor as typeof WorkerPort).activeInstanceClients.delete(
 					this.instanceKey
@@ -98,7 +104,7 @@ class WorkerPort<TransitionSchema extends Transition> {
 				;(this.constructor as typeof WorkerPort).instances.delete(
 					this.instanceKey
 				)
-				return
+				break staticCleanup
 			}
 			;(this.constructor as typeof WorkerPort).activeInstanceClients.set(
 				this.instanceKey,

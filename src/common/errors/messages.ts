@@ -7,6 +7,7 @@ const createInitString = (item: string, reportSnake: string) =>
 	`${item} was initialized twice! ${INTERNAL_PROCESS} ${reportAt(reportSnake)}`
 
 export const TEST_ONLY = `Testing function run outside of Vitest. ${INTERNAL_PROCESS} ${reportAt('test_only_fn_used')}`
+export const MAP_DESTRUCTOR_INCONSISTENCY = `Port manager assumed a port existed, but it was not present. ${INTERNAL_PROCESS} ${reportAt('static_map_inconsistent')}`
 export const DOUBLE_SHAREDWORKER_PORT_INIT = createInitString(
 	'SharedWorker port',
 	'sw_double_init'
