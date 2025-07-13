@@ -1,3 +1,5 @@
+/* v8 ignore start */
+
 export class NoPortsError extends Error {
 	constructor(message: string) {
 		super(message)

@@ -1,3 +1,5 @@
+/* v8 ignore start */
+
 const INTERNAL_PROCESS =
 	'This is a process that happens internally, so this is probably a problem with ground0, not your code.'
 const reportAt = (reportSnake: string) =>
