@@ -29,6 +29,9 @@ jobs:
       - name: Lint
         run: bun run lint
 
+      - name: Coveralls
+        uses: coverallsapp/github-action@v2
+
   Style:
     runs-on: ubuntu-latest
 
