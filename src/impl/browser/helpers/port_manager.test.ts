@@ -14,7 +14,7 @@ import {
 	__testing__do_not_use_this_ever_or_you_will_have_a_terrible_time_and_also_cause_probably_pretty_major_and_significant_bugs_and_we_wouldnt_want_that_would_we__WorkerPort as forbidden_WorkerPort,
 	portManager
 } from './port_manager'
-import { NoPortsError } from '../../../common/errors'
+import { InternalStateError, NoPortsError } from '../../../common/errors'
 import {
 	UpstreamWorkerMessageType,
 	type UpstreamWorkerMessage
@@ -64,7 +64,7 @@ describe('init', () => {
 	})
 })
 describe('onconnect', () => {
-	beforeAll(() => {
+	beforeEach(() => {
 		portManager.init()
 	})
 	it('throws when no ports are provided', ({ skip }) => {
@@ -199,6 +199,7 @@ describe('Symbol.dispose', () => {
 		if (typeof setTimeoutMock.mock.lastCall[0] !== 'function')
 			return skip('setTimeout not called with function')
 
-		// TODO: finish this test
+		expect(activeInstanceClients.delete(`${SOCKET_URL}::${DB_NAME}`)).toBe(true)
+		expect(setTimeoutMock.mock.lastCall[0]).toThrow(InternalStateError)
 	})
 })
