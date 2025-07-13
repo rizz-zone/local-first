@@ -39,7 +39,9 @@ class WorkerPort<TransitionSchema extends Transition> {
 	}
 
 	public init(data: InstanceData) {
+		// We ignore this condition because it's unlikely to happen, and very hard to test.
 		if (this.instanceKey)
+			/* v8 ignore next */
 			throw new PortDoubleInitError(DOUBLE_SHAREDWORKER_PORT_INIT)
 
 		// We need to set both maps up in order to init this port.
@@ -71,21 +73,23 @@ class WorkerPort<TransitionSchema extends Transition> {
 		)
 	}
 
+	private onmessage(
+		event: MessageEvent<UpstreamWorkerMessage<TransitionSchema>>
+	) {
+		const message = event.data
+		switch (message.type) {
+			case UpstreamWorkerMessageType.Init:
+				this.init(message.data)
+				break
+			case UpstreamWorkerMessageType.Ping:
+				this.resetTimeout()
+				break
+		}
+	}
+
 	constructor(port: MessagePort) {
 		this.port = port
-		this.port.onmessage = (
-			event: MessageEvent<UpstreamWorkerMessage<TransitionSchema>>
-		) => {
-			const message = event.data
-			switch (message.type) {
-				case UpstreamWorkerMessageType.Init:
-					this.init(message.data)
-					break
-				case UpstreamWorkerMessageType.Ping:
-					this.resetTimeout()
-					break
-			}
-		}
+		this.port.onmessage = this.onmessage.bind(this)
 		this.port.onmessageerror = () =>
 			console.error(
 				'Message error on SharedWorker. This is rare and suggests a browser or hardware issue.'
