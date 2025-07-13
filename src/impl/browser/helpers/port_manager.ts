@@ -28,10 +28,14 @@ class WorkerPort<TransitionSchema extends Transition> {
 	private instanceKey?: InstanceKey
 	private instance?: WorkerLocalFirst
 
-	private timeout? = setTimeout(this[Symbol.dispose], 60000)
+	private createTimeout() {
+		return setTimeout(this[Symbol.dispose].bind(this), 60000)
+	}
+
+	private timeout? = this.createTimeout()
 	private resetTimeout() {
 		clearTimeout(this.timeout)
-		this.timeout = setTimeout(this[Symbol.dispose], 60000)
+		this.timeout = this.createTimeout()
 	}
 
 	public init(data: InstanceData) {
