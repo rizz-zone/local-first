@@ -1,7 +1,8 @@
 import { vi, beforeEach, describe, expect, it } from 'vitest'
-import { workerEntrypoint } from './worker'
 import { UpstreamWorkerMessageType } from '../../../../types/messages/worker/UpstreamWorkerMessage'
 import { WorkerLocalFirst } from '../../helpers/worker_thread'
+import { importUnique } from '../../../../testing/dynamic_import'
+import { WorkerDoubleInitError } from '../../../../common/errors'
 
 const workerScope = globalThis as unknown as DedicatedWorkerGlobalScope
 
@@ -15,8 +16,10 @@ vi.mock('../../helpers/worker_thread', () => ({
 }))
 
 describe('Worker entrypoint', () => {
-	beforeEach(() => {
+	let workerEntrypoint: () => unknown
+	beforeEach(async () => {
 		vi.clearAllMocks()
+		workerEntrypoint = (await importUnique('./worker')).workerEntrypoint
 	})
 
 	it('should set onmessage and onmessageerror handlers', () => {
@@ -74,5 +77,10 @@ describe('Worker entrypoint', () => {
 
 		expect(consoleErrorSpy).toHaveBeenCalled()
 		consoleErrorSpy.mockRestore()
+	})
+
+	it('should disallow double init', () => {
+		workerEntrypoint()
+		expect(workerEntrypoint).toThrow(WorkerDoubleInitError)
 	})
 })

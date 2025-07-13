@@ -6,8 +6,14 @@ import {
 	type UpstreamWorkerMessage
 } from '../../../../types/messages/worker/UpstreamWorkerMessage'
 import type { Transition } from '../../../../types/transitions/Transition'
+import { WorkerDoubleInitError } from '../../../../common/errors'
+import { workerDoubleInit } from '../../../../common/errors/messages'
 
+let called = false
 export function workerEntrypoint<TransitionSchema extends Transition>() {
+	if (called) throw new WorkerDoubleInitError(workerDoubleInit(false))
+	called = true
+
 	const ourObject = new WorkerLocalFirst()
 
 	onmessage = (
