@@ -30,6 +30,7 @@ export class BrowserLocalFirst<TransitionSchema extends Transition> {
 			type: UpstreamWorkerMessageType.Init,
 			data: { dbName, wsUrl }
 		})
+		// TODO: If we have a SharedWorker, ping it on a schedule
 	}
 	public transition(transition: TransitionSchema) {
 		this.submitWorkerMessage({
