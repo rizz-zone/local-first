@@ -29,6 +29,11 @@ class WorkerPort<TransitionSchema extends Transition> {
 	private instance?: WorkerLocalFirst
 
 	private createTimeout() {
+		// TODO: This is poor practice because there are legitimate reasons for
+		// the main thread to go offline for more than a minute. Before full
+		// release, this should be converted to instead *gently* mark a port as
+		// inactive, such that it can still 'restart' if the main thread shows
+		// back up.
 		return setTimeout(this[Symbol.dispose].bind(this), 60000)
 	}
 
