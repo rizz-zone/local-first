@@ -12,12 +12,13 @@
     "arktype": "^2.1.20",
     "eslint-config-prettier": "^10.1.5",
     "jsdom": "^26.1.0",
+    "msw": "^2.10.3",
     "prettier": "^3.6.2",
     "tsdown": "^0.12.9",
     "typescript-eslint": "^8.36.0",
     "vite": "^7.0.4",
     "vitest": "^3.2.4",
-    "msw": "^2.10.3",
+    "wrangler": "^4.24.3",
     "zod": "^4.0.2"
   },
   "peerDependencies": {
@@ -39,6 +40,7 @@
     "./package.json": "./package.json"
   },
   "dependencies": {
+    "@cloudflare/workers-types": "^4.20250712.0",
     "@standard-schema/spec": "^1.0.0",
     "xstate": "^5.20.1"
   }
