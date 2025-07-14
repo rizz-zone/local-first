@@ -2,7 +2,7 @@
 
 import { DurableObject } from 'cloudflare:workers'
 import type { Transition } from '../../../types/transitions/Transition'
-import type { SyncEngineDefinition } from '../../shared/exports/engine'
+import type { SyncEngineDefinition } from '../../../../basic/shared/src/exports/engine'
 
 type CheckFetch = (request: Request) => boolean
 

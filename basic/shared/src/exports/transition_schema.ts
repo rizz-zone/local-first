@@ -1,6 +1,6 @@
 import type { StandardSchemaV1 } from '@standard-schema/spec'
-import type { Transition } from '../../../types/transitions/Transition'
-import type { TransitionSchema } from '../../../types/transitions/TransitionSchema'
+import type { Transition } from '../../../../src/types/transitions/Transition'
+import type { TransitionSchema } from '../../../../src/types/transitions/TransitionSchema'
 
 /**
  * Creates a `TransitionSchema` that can be used in a sync engine definition.

@@ -43,13 +43,6 @@ export const clientMachine = setup({
 		websocket: {
 			initial: 'disconnected',
 			states: {
-				connected: {
-					on: {
-						'ws connection issue': {
-							target: 'disconnected'
-						}
-					}
-				},
 				disconnected: {
 					entry: 'establishSocket',
 					on: {
@@ -58,6 +51,13 @@ export const clientMachine = setup({
 						},
 						'ws connected': {
 							target: 'connected'
+						}
+					}
+				},
+				connected: {
+					on: {
+						'ws connection issue': {
+							target: 'disconnected'
 						}
 					}
 				}

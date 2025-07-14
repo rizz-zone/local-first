@@ -1,8 +1,8 @@
 import { vi, beforeEach, describe, expect, it } from 'vitest'
-import { UpstreamWorkerMessageType } from '../../../../types/messages/worker/UpstreamWorkerMessage'
+import { UpstreamWorkerMessageType } from '../../../../../src/types/messages/worker/UpstreamWorkerMessage'
 import { WorkerLocalFirst } from '../../helpers/worker_thread'
-import { importUnique } from '../../../../testing/dynamic_import'
-import { WorkerDoubleInitError } from '../../../../common/errors'
+import { importUnique } from '../../../../../src/testing/dynamic_import'
+import { WorkerDoubleInitError } from '../../../../../src/common/errors'
 
 const workerScope = globalThis as unknown as DedicatedWorkerGlobalScope
 

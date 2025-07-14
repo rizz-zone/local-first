@@ -5,10 +5,10 @@ import {
 	sharedWorkerEntrypoint as IndexSharedWorkerEntrypoint,
 	workerEntrypoint as IndexWorkerEntrypoint
 } from './'
-import { BrowserLocalFirst } from './impl/browser/exports/browser'
+import { BrowserLocalFirst } from '../basic/browser/src/exports/browser'
 import { createDurableObject } from './impl/do/exports/durable_object'
-import { sharedWorkerEntrypoint } from './impl/browser/exports/entrypoints/shared_worker'
-import { workerEntrypoint } from './impl/browser/exports/entrypoints/worker'
+import { sharedWorkerEntrypoint } from '../basic/browser/src/exports/entrypoints/shared_worker'
+import { workerEntrypoint } from '../basic/browser/src/exports/entrypoints/worker'
 
 describe('main entrypoint', () => {
 	it('exports the same BrowserLocalFirst as browser.ts', () => {

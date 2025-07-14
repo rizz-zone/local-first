@@ -1,8 +1,8 @@
 import {
 	type UpstreamWorkerMessage,
 	UpstreamWorkerMessageType
-} from '../../../types/messages/worker/UpstreamWorkerMessage'
-import type { Transition } from '../../../types/transitions/Transition'
+} from '../../../../src/types/messages/worker/UpstreamWorkerMessage'
+import type { Transition } from '../../../../src/types/transitions/Transition'
 
 function isShared(worker: Worker | SharedWorker): worker is SharedWorker {
 	return 'port' in worker
