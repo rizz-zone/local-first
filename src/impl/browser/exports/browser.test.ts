@@ -8,7 +8,12 @@ import {
 import type { TestingTransition } from '../../../testing/transitions'
 import { TransitionImpact } from '../../../types/transitions/Transition'
 
+const setIntervalMock = vi
+	.spyOn(globalThis, 'setInterval')
+	.mockImplementation(() => 1 as unknown as NodeJS.Timeout)
+
 describe('BrowserLocalFirst', () => {
+	beforeEach(() => setIntervalMock.mockClear())
 	describe('Worker', () => {
 		describe('message posting via .postMessage()', () => {
 			let mockWorker: Worker
@@ -52,21 +57,37 @@ describe('BrowserLocalFirst', () => {
 					}
 				})
 			})
+			it('does not set a timer', () => {
+				new BrowserLocalFirst<TestingTransition>({
+					dbName: DB_NAME,
+					wsUrl: SOCKET_URL,
+					worker: mockWorker
+				})
+				expect(setIntervalMock).not.toHaveBeenCalled()
+			})
 		})
 	})
 	describe('SharedWorker', () => {
-		describe('message posting via .port.postMessage()', () => {
-			type TestingSharedWorker = SharedWorker & {
-				postMessage: Worker['postMessage']
-			}
-			let mockWorker: TestingSharedWorker
-			beforeEach(() => {
-				mockWorker = {
-					port: { postMessage: vi.fn() },
-					postMessage: vi.fn()
-				} as unknown as TestingSharedWorker
-			})
+		type TestingSharedWorker = SharedWorker & {
+			postMessage: Worker['postMessage']
+		}
+		let mockWorker: TestingSharedWorker
+		beforeEach(() => {
+			mockWorker = {
+				port: { postMessage: vi.fn() },
+				postMessage: vi.fn()
+			} as unknown as TestingSharedWorker
+		})
 
+		it('sets a timer', () => {
+			new BrowserLocalFirst<TestingTransition>({
+				dbName: DB_NAME,
+				wsUrl: SOCKET_URL,
+				worker: mockWorker
+			})
+			expect(setIntervalMock).toHaveBeenCalledOnce()
+		})
+		describe('message posting via .port.postMessage()', () => {
 			it('inits', () => {
 				new BrowserLocalFirst({
 					dbName: DB_NAME,
@@ -102,6 +123,21 @@ describe('BrowserLocalFirst', () => {
 					}
 				})
 				expect(mockWorker.postMessage).not.toBeCalled()
+			})
+			it('pings when timer runs', ({ skip }) => {
+				new BrowserLocalFirst<TestingTransition>({
+					dbName: DB_NAME,
+					wsUrl: SOCKET_URL,
+					worker: mockWorker
+				})
+				if (typeof setIntervalMock.mock.lastCall === 'undefined')
+					return skip('timer was not set')
+				setIntervalMock.mock.lastCall[0]()
+
+				expect(mockWorker.port.postMessage).toHaveBeenCalledWith({
+					type: UpstreamWorkerMessageType.Ping
+				})
+				expect(mockWorker.postMessage).not.toHaveBeenCalled()
 			})
 		})
 	})

@@ -4,17 +4,23 @@ import {
 } from '../../../types/messages/worker/UpstreamWorkerMessage'
 import type { Transition } from '../../../types/transitions/Transition'
 
+function isShared(worker: Worker | SharedWorker): worker is SharedWorker {
+	return 'port' in worker
+}
+
 export class BrowserLocalFirst<TransitionSchema extends Transition> {
 	private readonly worker: Worker | SharedWorker
 	private submitWorkerMessage(
 		message: UpstreamWorkerMessage<TransitionSchema>
 	) {
-		if ('port' in this.worker) {
+		if (isShared(this.worker)) {
 			this.worker.port.postMessage(message)
 			return
 		}
 		this.worker.postMessage(message)
 	}
+
+	private pingTimer: ReturnType<typeof setInterval> | undefined
 
 	constructor({
 		dbName,
@@ -25,12 +31,17 @@ export class BrowserLocalFirst<TransitionSchema extends Transition> {
 		wsUrl: string
 		worker: Worker | SharedWorker
 	}) {
-		this.worker = worker // The user or adapter **must** define this because the way workers are invoked is not standardised
+		this.worker = worker // The user or adapter **must** define this because the way workers are invoked is not standardised across build systems
 		this.submitWorkerMessage({
 			type: UpstreamWorkerMessageType.Init,
 			data: { dbName, wsUrl }
 		})
-		// TODO: If we have a SharedWorker, ping it on a schedule
+		if (isShared(this.worker))
+			this.pingTimer = setInterval(
+				() =>
+					this.submitWorkerMessage({ type: UpstreamWorkerMessageType.Ping }),
+				5 * 1000
+			)
 	}
 	public transition(transition: TransitionSchema) {
 		this.submitWorkerMessage({
@@ -38,4 +49,6 @@ export class BrowserLocalFirst<TransitionSchema extends Transition> {
 			data: transition
 		})
 	}
+
+	// TODO: Symbol.dispose
 }
