@@ -86,6 +86,18 @@
         "typescript": "^5.8.3",
       },
     },
+    "basic/ground0": {
+      "name": "ground0",
+      "version": "0.1.0",
+      "dependencies": {
+        "@ground0/browser": "workspace:*",
+        "@ground0/durable-object": "workspace:*",
+        "@ground0/shared": "workspace:*",
+      },
+      "peerDependencies": {
+        "typescript": "^5.8.3",
+      },
+    },
     "basic/shared": {
       "name": "@ground0/shared",
       "version": "0.1.0",
@@ -589,6 +601,8 @@
     "graphemer": ["graphemer@1.4.0", "", {}, "sha512-EtKwoO6kxCL9WO5xipiHTZlSzBm7WLT627TqC/uVRd0HKmq8NXyebnNYxDoBi7wt8eTWrUrKXCOVaFq9x1kgag=="],
 
     "graphql": ["graphql@16.11.0", "", {}, "sha512-mS1lbMsxgQj6hge1XZ6p7GPhbrtFwUFYi3wRzXAC/FmYnyXMTvvI3td3rjmQ2u8ewXueaSvRPWaEcgVVOT9Jnw=="],
+
+    "ground0": ["ground0@workspace:basic/ground0"],
 
     "happy-dom": ["happy-dom@18.0.1", "", { "dependencies": { "@types/node": "^20.0.0", "@types/whatwg-mimetype": "^3.0.2", "whatwg-mimetype": "^3.0.0" } }, "sha512-qn+rKOW7KWpVTtgIUi6RVmTBZJSe2k0Db0vh1f7CWrWclkkc7/Q+FrOfkZIb2eiErLyqu5AXEzE7XthO9JVxRA=="],
 
