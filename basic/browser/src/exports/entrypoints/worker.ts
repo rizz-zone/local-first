@@ -6,8 +6,8 @@ import {
 	type UpstreamWorkerMessage
 } from '../../../../../src/types/messages/worker/UpstreamWorkerMessage'
 import type { Transition } from '../../../../../src/types/transitions/Transition'
-import { WorkerDoubleInitError } from '../../../../../src/common/errors'
-import { workerDoubleInit } from '../../../../../src/common/errors/messages'
+import { WorkerDoubleInitError } from '../../../../shared/src/errors'
+import { workerDoubleInit } from '../../../../shared/src/errors/messages'
 
 let called = false
 export function workerEntrypoint<TransitionSchema extends Transition>() {

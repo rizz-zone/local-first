@@ -14,13 +14,13 @@ import {
 	__testing__do_not_use_this_ever_or_you_will_have_a_terrible_time_and_also_cause_probably_pretty_major_and_significant_bugs_and_we_wouldnt_want_that_would_we__WorkerPort as forbidden_WorkerPort,
 	portManager
 } from './port_manager'
-import { InternalStateError, NoPortsError } from '../../../../src/common/errors'
+import { InternalStateError, NoPortsError } from '../../../shared/src/errors'
 import {
 	UpstreamWorkerMessageType,
 	type UpstreamWorkerMessage
 } from '../../../../src/types/messages/worker/UpstreamWorkerMessage'
-import { DB_NAME, SOCKET_URL } from '../../../../src/testing/constants'
-import { importUnique } from '../../../../src/testing/dynamic_import'
+import { DB_NAME, SOCKET_URL } from '../testing/constants'
+import { importUnique } from '../../../shared/src/testing/dynamic_import'
 import type { InstanceKey } from '../../../../src/types/common/client/InstanceKey'
 import type { WorkerLocalFirst } from './worker_thread'
 import type { InstanceData } from '../../../../src/types/common/client/InstanceData'

@@ -1,5 +1,5 @@
-import type { Transition } from '../../../../src/types/transitions/Transition'
-import type { TransitionSchema } from '../../../../src/types/transitions/TransitionSchema'
+import type { Transition } from './transitions/Transition'
+import type { TransitionSchema } from './transitions/TransitionSchema'
 
 export type SyncEngineDefinition<T extends Transition> = {
 	version: {

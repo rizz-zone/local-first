@@ -6,6 +6,7 @@
 		"module": "Preserve",
 		"moduleDetection": "force",
 		"jsx": "react-jsx",
+		"types": ["@cloudflare/workers-types"],
 		"allowJs": true,
 
 		// Bundler mode
@@ -26,9 +27,5 @@
 		"noUnusedParameters": true,
 		"noPropertyAccessFromIndexSignature": true
 	},
-	"include": [
-		"src/**/*.ts",
-		"../browser/src/types/instances/InstanceData.ts",
-		"../browser/src/types/instances/InstanceKey.ts"
-	]
+	"include": ["src/**/*.ts"]
 }

@@ -26,9 +26,5 @@
 		"noUnusedParameters": true,
 		"noPropertyAccessFromIndexSignature": true
 	},
-	"include": [
-		"src/**/*.ts",
-		"../browser/src/types/instances/InstanceData.ts",
-		"../browser/src/types/instances/InstanceKey.ts"
-	]
+	"include": ["src/**/*.ts"]
 }

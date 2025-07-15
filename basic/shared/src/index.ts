@@ -1,2 +1,5 @@
-export type { SyncEngineDefinition } from './exports/engine'
+export type { SyncEngineDefinition } from './types/SyncEngineDefinition'
 export { createTransitionSchema } from './exports/transition_schema'
+export type { Transition } from './types/transitions/Transition'
+export type { TransitionSchema } from './types/transitions/TransitionSchema'
+export type { UUID } from './types/common/UUID'

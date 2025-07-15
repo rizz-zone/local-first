@@ -4,7 +4,7 @@ import {
 	InternalStateError,
 	NoPortsError,
 	PortDoubleInitError
-} from '../../../../src/common/errors'
+} from '../../../shared/src/errors'
 import type { InstanceData } from '../../../../src/types/common/client/InstanceData'
 import type { InstanceKey } from '../../../../src/types/common/client/InstanceKey'
 import {
@@ -16,7 +16,7 @@ import { WorkerLocalFirst } from './worker_thread'
 import {
 	DOUBLE_SHAREDWORKER_PORT_INIT,
 	MAP_DESTRUCTOR_INCONSISTENCY
-} from '../../../../src/common/errors/messages'
+} from '../../../shared/src/errors/messages'
 
 const ctx = self as unknown as SharedWorkerGlobalScope
 

@@ -1,8 +1,7 @@
 /// <reference types="@cloudflare/workers-types" />
 
 import { DurableObject } from 'cloudflare:workers'
-import type { Transition } from '../../../types/transitions/Transition'
-import type { SyncEngineDefinition } from '../../../../basic/shared/src/exports/engine'
+import type { Transition, SyncEngineDefinition } from '@ground0/shared'
 
 type CheckFetch = (request: Request) => boolean
 

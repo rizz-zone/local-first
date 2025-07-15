@@ -6,7 +6,7 @@ import {
 	workerEntrypoint as IndexWorkerEntrypoint
 } from './'
 import { BrowserLocalFirst } from '../basic/browser/src/exports/browser'
-import { createDurableObject } from './impl/do/exports/durable_object'
+import { createDurableObject } from '../basic/do/exports/durable_object'
 import { sharedWorkerEntrypoint } from '../basic/browser/src/exports/entrypoints/shared_worker'
 import { workerEntrypoint } from '../basic/browser/src/exports/entrypoints/worker'
 
