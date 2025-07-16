@@ -28,7 +28,7 @@
 		"noPropertyAccessFromIndexSignature": true,
 
 		"paths": {
-			"@/*": ["./*"]
+			"@/*": ["./src/*"]
 		}
 	},
 	"include": ["src/**/*.ts"]
