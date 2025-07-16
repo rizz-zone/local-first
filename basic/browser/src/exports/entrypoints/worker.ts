@@ -1,13 +1,15 @@
 /// <reference lib="webworker" />
 
-import { WorkerLocalFirst } from '../../helpers/worker_thread'
+import { WorkerLocalFirst } from '@/helpers/worker_thread'
 import {
 	UpstreamWorkerMessageType,
 	type UpstreamWorkerMessage
-} from '../../../../../src/types/messages/worker/UpstreamWorkerMessage'
-import type { Transition } from '../../../../../src/types/transitions/Transition'
-import { WorkerDoubleInitError } from '../../../../shared/src/errors'
-import { workerDoubleInit } from '../../../../shared/src/errors/messages'
+} from '@/types/internal_messages/UpstreamWorkerMessage'
+import {
+	type Transition,
+	WorkerDoubleInitError,
+	workerDoubleInit
+} from '@ground0/shared'
 
 let called = false
 export function workerEntrypoint<TransitionSchema extends Transition>() {

@@ -14,16 +14,15 @@ import {
 	__testing__do_not_use_this_ever_or_you_will_have_a_terrible_time_and_also_cause_probably_pretty_major_and_significant_bugs_and_we_wouldnt_want_that_would_we__WorkerPort as forbidden_WorkerPort,
 	portManager
 } from './port_manager'
-import { InternalStateError, NoPortsError } from '../../../shared/src/errors'
+import { InternalStateError, NoPortsError, importUnique } from '@ground0/shared'
 import {
 	UpstreamWorkerMessageType,
 	type UpstreamWorkerMessage
-} from '../../../../src/types/messages/worker/UpstreamWorkerMessage'
-import { DB_NAME, SOCKET_URL } from '../testing/constants'
-import { importUnique } from '../../../shared/src/testing/dynamic_import'
-import type { InstanceKey } from '../../../../src/types/common/client/InstanceKey'
+} from '@/types/internal_messages/UpstreamWorkerMessage'
+import { DB_NAME, SOCKET_URL } from '@/testing/constants'
+import type { InstanceKey } from '@/types/instances/InstanceKey'
+import type { InstanceData } from '@/types/instances/InstanceData'
 import type { WorkerLocalFirst } from './worker_thread'
-import type { InstanceData } from '../../../../src/types/common/client/InstanceData'
 
 const FORBIDDEN_WORKER_PORT =
 	'__testing__do_not_use_this_ever_or_you_will_have_a_terrible_time_and_also_cause_probably_pretty_major_and_significant_bugs_and_we_wouldnt_want_that_would_we__WorkerPort'

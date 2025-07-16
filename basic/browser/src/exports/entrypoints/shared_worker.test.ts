@@ -1,8 +1,7 @@
 import { vi, beforeEach, describe, expect, it } from 'vitest'
 import { sharedWorkerEntrypoint } from './shared_worker'
-import { WorkerDoubleInitError } from '../../../../shared/src/errors'
-import { portManager } from '../../helpers/port_manager'
-import { importUnique } from '../../../../shared/src/testing/dynamic_import'
+import { portManager } from '@/helpers/port_manager'
+import { importUnique, WorkerDoubleInitError } from '@ground0/shared'
 
 describe('SharedWorker entrypoint', () => {
 	const initSpy = vi.spyOn(portManager, 'init')

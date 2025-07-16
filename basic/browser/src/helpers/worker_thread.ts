@@ -1,7 +1,7 @@
 /// <reference lib="webworker" />
 
 import { createActor } from 'xstate'
-import { clientMachine } from '../machines/worker'
+import { clientMachine } from '@/machines/worker'
 
 export class WorkerLocalFirst {
 	private machine

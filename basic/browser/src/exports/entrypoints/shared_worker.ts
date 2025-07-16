@@ -1,9 +1,8 @@
 /// <reference lib="webworker" />
 
-import { WorkerDoubleInitError } from '../../../../shared/src/errors'
-import { workerDoubleInit } from '../../../../shared/src/errors/messages'
-import type { Transition } from '../../../../../src/types/transitions/Transition'
-import { portManager } from '../../helpers/port_manager'
+import { WorkerDoubleInitError, workerDoubleInit } from '@ground0/shared'
+import type { Transition } from '@ground0/shared'
+import { portManager } from '@/helpers/port_manager'
 
 let called = false
 export function sharedWorkerEntrypoint<TransitionSchema extends Transition>() {

@@ -1,12 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { BrowserLocalFirst } from './browser'
-import { DB_NAME, SOCKET_URL } from '../testing/constants'
+import { DB_NAME, SOCKET_URL } from '@/testing/constants'
 import {
 	type UpstreamWorkerMessage,
 	UpstreamWorkerMessageType
-} from '../../../../src/types/messages/worker/UpstreamWorkerMessage'
-import type { TestingTransition } from '../../../shared/src/testing/transitions'
-import { TransitionImpact } from '../../../../src/types/transitions/Transition'
+} from '@/types/internal_messages/UpstreamWorkerMessage'
+import { type TestingTransition, TransitionImpact } from '@ground0/shared'
 
 const setIntervalMock = vi
 	.spyOn(globalThis, 'setInterval')

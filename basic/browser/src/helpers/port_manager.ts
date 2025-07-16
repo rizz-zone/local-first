@@ -3,20 +3,18 @@
 import {
 	InternalStateError,
 	NoPortsError,
-	PortDoubleInitError
-} from '../../../shared/src/errors'
-import type { InstanceData } from '../../../../src/types/common/client/InstanceData'
-import type { InstanceKey } from '../../../../src/types/common/client/InstanceKey'
+	PortDoubleInitError,
+	type Transition,
+	DOUBLE_SHAREDWORKER_PORT_INIT,
+	MAP_DESTRUCTOR_INCONSISTENCY
+} from '@ground0/shared'
+import type { InstanceData } from '@/types/instances/InstanceData'
+import type { InstanceKey } from '@/types/instances/InstanceKey'
 import {
 	UpstreamWorkerMessageType,
 	type UpstreamWorkerMessage
-} from '../../../../src/types/messages/worker/UpstreamWorkerMessage'
-import type { Transition } from '../../../../src/types/transitions/Transition'
+} from '@/types/internal_messages/UpstreamWorkerMessage'
 import { WorkerLocalFirst } from './worker_thread'
-import {
-	DOUBLE_SHAREDWORKER_PORT_INIT,
-	MAP_DESTRUCTOR_INCONSISTENCY
-} from '../../../shared/src/errors/messages'
 
 const ctx = self as unknown as SharedWorkerGlobalScope
 
