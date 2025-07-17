@@ -4,7 +4,7 @@ export default defineConfig({
 	exports: true,
 	dts: true,
 	unbundle: true,
-	target: 'es2021',
+	target: 'esnext',
 	platform: 'neutral',
 	sourcemap: true,
 	entry: {

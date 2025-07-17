@@ -5,9 +5,10 @@ export default defineConfig({
 	dts: true,
 	unbundle: true,
 	target: 'esnext',
-	platform: 'browser',
+	platform: 'neutral',
 	sourcemap: true,
 	entry: {
 		index: 'src/index.ts'
-	}
+	},
+	external: ['cloudflare:workers']
 })
