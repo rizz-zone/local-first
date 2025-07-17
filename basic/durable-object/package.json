@@ -6,15 +6,11 @@
   "private": false,
   "sideEffects": false,
   "packageManager": "bun@1.2.18",
-  "devDependencies": {
-  },
+  "devDependencies": {},
   "peerDependencies": {
     "typescript": "^5.8.3"
   },
   "scripts": {
-    "style": "prettier -c .",
-    "style:write": "prettier -w .",
-    "lint": "eslint .",
     "test": "vitest run --coverage",
     "test:watch": "vitest watch --coverage",
     "build": "tsdown",

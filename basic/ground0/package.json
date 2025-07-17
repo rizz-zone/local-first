@@ -10,9 +10,6 @@
     "typescript": "^5.8.3"
   },
   "scripts": {
-    "style": "prettier -c .",
-    "style:write": "prettier -w .",
-    "lint": "eslint .",
     "build": "tsdown",
     "dev": "tsdown --watch --no-clean",
     "check-types": "tsc"
@@ -20,7 +17,8 @@
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
-    ".": "./dist/index.js"
+    ".": "./dist/index.js",
+    "./package.json": "./package.json"
   },
   "dependencies": {
     "@ground0/shared": "workspace:*",

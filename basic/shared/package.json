@@ -12,10 +12,7 @@
   "devDependencies": {
     "arktype": "^2.1.20"
   },
- "scripts": {
-    "style": "prettier -c .",
-    "style:write": "prettier -w .",
-    "lint": "eslint .",
+  "scripts": {
     "test": "vitest run --coverage",
     "test:watch": "vitest watch --coverage",
     "build": "tsdown",
