@@ -1,3 +1,5 @@
+/* v8 ignore start */
+
 export * from './errors'
 export * from './errors/messages'
 export * from './exports/transition_schema'

@@ -25,9 +25,7 @@
     "./package.json": "./package.json"
   },
   "dependencies": {
-    "@cloudflare/workers-types": "^4.20250712.0",
     "@standard-schema/spec": "^1.0.0",
-    "xstate": "^5.20.1",
     "zod": "^4.0.2"
   }
 }

@@ -6,7 +6,8 @@
 			"outputs": ["dist/**", "coverage/**"]
 		},
 		"test": {
-			"dependsOn": ["^test"]
+			"dependsOn": ["^test"],
+			"outputs": ["dist/**", "coverage/**"]
 		},
 		"test:watch": {
 			"persistent": true,
@@ -15,6 +16,10 @@
 		"dev": {
 			"persistent": true,
 			"cache": false
+		},
+		"check-types": {
+			"dependsOn": ["^check-types"],
+			"outputs": ["dist/**", "coverage/**"]
 		}
 	}
 }

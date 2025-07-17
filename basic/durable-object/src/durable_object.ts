@@ -22,6 +22,7 @@ export class SyncEngineBackend<
 	) {
 		super(ctx, env)
 		this.engineDef = options.engineDef
+		this.checkFetch = options.checkFetch
 	}
 
 	override async fetch(request: Request) {

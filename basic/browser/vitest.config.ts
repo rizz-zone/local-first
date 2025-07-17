@@ -1,4 +1,5 @@
 import { configDefaults, defineConfig } from 'vitest/config'
+import tsconfigPaths from 'vite-tsconfig-paths'
 
 export default defineConfig({
 	test: {
@@ -10,5 +11,7 @@ export default defineConfig({
 		},
 		globals: true,
 		environment: 'jsdom'
-	}
+	},
+	// @ts-expect-error There's some kind of type conflict but the plugin definitely works
+	plugins: [tsconfigPaths()]
 })
