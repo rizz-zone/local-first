@@ -3,30 +3,13 @@
 import { DurableObject } from 'cloudflare:workers'
 import type { Transition, SyncEngineDefinition } from '@ground0/shared'
 
-type CheckFetch = (request: Request) => boolean
-
-export class SyncEngineBackend<
-	T extends Transition,
-	Env extends object
-> extends DurableObject {
+export class SyncEngineBackend<T extends Transition> extends DurableObject {
 	private engineDef: SyncEngineDefinition<T>
-	private checkFetch?: CheckFetch
-
-	constructor(
-		ctx: DurableObjectState,
-		env: Env,
-		options: {
-			engineDef: SyncEngineDefinition<T>
-			checkFetch?: CheckFetch
-		}
-	) {
-		super(ctx, env)
-		this.engineDef = options.engineDef
-		this.checkFetch = options.checkFetch
-	}
+	private checkFetch?: (request: Request) => boolean
 
 	override async fetch(request: Request) {
-		this.checkFetch?.(request)
+		if (this.checkFetch && !this.checkFetch(request))
+			return new Response('Unauthorized', { status: 401 })
 
 		// Create two ends of a WebSocket connection
 		const webSocketPair = new WebSocketPair()

@@ -6,7 +6,9 @@
   "private": false,
   "sideEffects": false,
   "packageManager": "bun@1.2.18",
-  "devDependencies": {},
+  "devDependencies": {
+    "@cloudflare/vitest-pool-workers": "^0.8.55"
+  },
   "peerDependencies": {
     "typescript": "^5.8.3"
   },
