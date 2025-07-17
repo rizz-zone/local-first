@@ -1,10 +1,19 @@
-/// <reference types="@cloudflare/workers-types" />
-
 import { DurableObject } from 'cloudflare:workers'
-import type { Transition, SyncEngineDefinition } from '@ground0/shared'
+import {
+	UpstreamWsMessageAction,
+	type Transition,
+	type SyncEngineDefinition,
+	isUpstreamWsMessage,
+	type UpstreamWsMessage,
+	WsCloseCode
+} from '@ground0/shared'
+import SuperJSON from 'superjson'
+import semverMajor from 'semver/functions/major'
 
-export class SyncEngineBackend<T extends Transition> extends DurableObject {
-	private engineDef: SyncEngineDefinition<T>
+export abstract class SyncEngineBackend<
+	T extends Transition
+> extends DurableObject {
+	protected abstract engineDef: SyncEngineDefinition<T>
 	private checkFetch?: (request: Request) => boolean
 
 	override async fetch(request: Request) {
@@ -29,11 +38,29 @@ export class SyncEngineBackend<T extends Transition> extends DurableObject {
 		ws: WebSocket,
 		message: string | ArrayBuffer
 	) {
-		// Upon receiving a message from the client, reply with the same message,
-		// but will prefix the message with "[Durable Object]: " and return the
-		// total number of connections.
-		ws.send(
-			`[Durable Object] message: ${message}, connections: ${this.ctx.getWebSockets().length}`
-		)
+		if (typeof message !== 'string') {
+			console.log('Client sent an ArrayBuffer!')
+			return ws.close(WsCloseCode.InvalidMessage)
+		}
+		let decoded: UpstreamWsMessage
+		try {
+			const potentialObj = SuperJSON.parse(message)
+			if (!isUpstreamWsMessage(potentialObj)) throw new Error()
+			decoded = potentialObj
+		} catch {
+			console.log('Client did not send valid JSON!')
+			return ws.close(WsCloseCode.InvalidMessage)
+		}
+
+		switch (decoded.action) {
+			case UpstreamWsMessageAction.Init: {
+				if (
+					semverMajor(decoded.version) !==
+					semverMajor(this.engineDef.version.current)
+				)
+					return ws.close(WsCloseCode.Incompatible)
+				break
+			}
+		}
 	}
 }

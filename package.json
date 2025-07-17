@@ -32,5 +32,8 @@
   },
   "sideEffects": false,
   "type": "module",
-  "workspaces": ["basic/*", "adapters/*", "sample_integrations/*/*"]
+  "workspaces": ["basic/*", "adapters/*", "sample_integrations/*/*"],
+  "dependencies": {
+    
+  }
 }

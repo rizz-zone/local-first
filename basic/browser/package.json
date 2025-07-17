@@ -27,6 +27,7 @@
     "./package.json": "./package.json"
   },
   "dependencies": {
+    "superjson": "^2.2.2",
     "xstate": "^5.20.1",
     "@ground0/shared": "workspace:*"
   }

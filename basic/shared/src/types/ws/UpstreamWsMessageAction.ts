@@ -1,3 +1,3 @@
-export const enum UpstreamWsMessageAction {
+export enum UpstreamWsMessageAction {
 	Init
 }
