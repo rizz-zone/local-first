@@ -30,7 +30,8 @@
     "test": "turbo test",
     "test:watch": "turbo test:watch",
     "build": "turbo build",
-    "dev": "turbo dev"
+    "dev": "turbo dev",
+    "check-types": "turbo check-types"
   },
   "dependencies": {}
 }

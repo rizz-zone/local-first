@@ -18,7 +18,8 @@
     "test": "vitest run --coverage",
     "test:watch": "vitest watch --coverage",
     "build": "tsdown",
-    "dev": "tsdown --watch --no-clean"
+    "dev": "tsdown --watch --no-clean",
+    "check-types": "tsc"
   },
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -28,8 +29,6 @@
   },
   "dependencies": {
     "@cloudflare/workers-types": "^4.20250712.0",
-    "@standard-schema/spec": "^1.0.0",
-    "xstate": "^5.20.1",
     "@ground0/shared": "workspace:*"
   }
 }

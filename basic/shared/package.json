@@ -16,7 +16,8 @@
     "test": "vitest run --coverage",
     "test:watch": "vitest watch --coverage",
     "build": "tsdown",
-    "dev": "tsdown --watch --no-clean"
+    "dev": "tsdown --watch --no-clean",
+    "check-types": "tsc"
   },
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
