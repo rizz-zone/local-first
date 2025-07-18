@@ -1,5 +1,10 @@
-import type { Transition } from './transitions/Transition'
+import type { Transition, TransitionImpact } from './transitions/Transition'
 import type { TransitionSchema } from './transitions/TransitionSchema'
+
+type RequiredActionsForImpact<
+	T extends Transition,
+	RequiredImpact
+> = T extends { impact: RequiredImpact } ? T['action'] : never
 
 export type SyncEngineDefinition<T extends Transition> = {
 	version: {
@@ -11,20 +16,17 @@ export type SyncEngineDefinition<T extends Transition> = {
 		 * On the client side, if you connect to a Durable Object that has a mismatched MAJOR version, `version.onTooOld` will fire.
 		 */
 		current: string
-		/**
-		 * Define custom behaviour for when this sync engine is too old to connect to the Durable Object. This replaces the default behaviour of refreshing the tab immediately.
-		 */
-		onTooOld?: () => unknown
+		minimum?: string
 	}
 	transitions: {
 		/**
 		 * The transition schema for this sync enigne.
 		 */
 		schema: TransitionSchema<T>
-		handlers: {
-			[K in T['action']]: {
-				client: (data: (T & { action: K })['data']) => unknown
-			}
+		sharedHandlers: {
+			[K in RequiredActionsForImpact<T, TransitionImpact.OptimisticPush>]: (
+				data: (T & { action: K })['data']
+			) => unknown
 		}
 	}
 }

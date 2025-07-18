@@ -1,6 +1,6 @@
 export enum TransitionImpact {
 	LocalOnly,
-	SomethingElse
+	OptimisticPush
 }
 export type Transition = {
 	action: string | number

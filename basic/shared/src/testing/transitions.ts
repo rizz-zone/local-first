@@ -11,7 +11,7 @@ const schema = z.discriminatedUnion('action', [
 	}),
 	z.object({
 		action: z.literal(3),
-		impact: z.literal(TransitionImpact.SomethingElse),
+		impact: z.literal(TransitionImpact.OptimisticPush),
 		data: z.object({
 			foo: z.string(),
 			bar: z.number()
