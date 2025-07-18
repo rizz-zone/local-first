@@ -15,7 +15,14 @@ export abstract class SyncEngineBackend<
 	T extends Transition
 > extends DurableObject {
 	// All handlers are defined here, since engineDef has engineDef.transitions.sharedHandlers
+
+	/**
+	 * The `SyncEngineDefinition` that is shared between the client and the server.
+	 */
 	protected abstract engineDef: SyncEngineDefinition<T>
+	/**
+	 * `BackendHandlers` for transitions that run code specific to the Durable Object.
+	 */
 	protected abstract backendHandlers: BackendHandlers<T>
 	/**
 	 * A function to:
