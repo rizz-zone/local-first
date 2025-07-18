@@ -5,7 +5,8 @@ import {
 	type SyncEngineDefinition,
 	isUpstreamWsMessage,
 	type UpstreamWsMessage,
-	WsCloseCode
+	WsCloseCode,
+	type BackendHandlers
 } from '@ground0/shared'
 import SuperJSON from 'superjson'
 import semverMajor from 'semver/functions/major'
@@ -13,7 +14,9 @@ import semverMajor from 'semver/functions/major'
 export abstract class SyncEngineBackend<
 	T extends Transition
 > extends DurableObject {
+	// All handlers are defined here, since engineDef has engineDef.transitions.sharedHandlers
 	protected abstract engineDef: SyncEngineDefinition<T>
+	protected abstract backendHandlers: BackendHandlers<T>
 	/**
 	 * A function to:
 	 *
