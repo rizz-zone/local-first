@@ -1,5 +1,6 @@
 import type { Transition } from '../Transition'
 import type { TransitionSchema } from '../TransitionSchema'
+import type { GeneratedMigrationSchema } from './GeneratedMigrationSchema'
 import type { SharedHandlers } from './sets/SharedHandlers'
 
 export type SyncEngineDefinition<T extends Transition> = {
@@ -20,5 +21,8 @@ export type SyncEngineDefinition<T extends Transition> = {
 		 */
 		schema: TransitionSchema<T>
 		sharedHandlers: SharedHandlers<T>
+	}
+	db: {
+		schema: GeneratedMigrationSchema
 	}
 }

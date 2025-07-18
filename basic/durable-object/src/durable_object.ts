@@ -10,6 +10,11 @@ import {
 } from '@ground0/shared'
 import SuperJSON from 'superjson'
 import semverMajor from 'semver/functions/major'
+import {
+	drizzle,
+	type DrizzleSqliteDODatabase
+} from 'drizzle-orm/durable-sqlite'
+import { migrate } from 'drizzle-orm/durable-sqlite/migrator'
 
 export abstract class SyncEngineBackend<
 	T extends Transition
@@ -55,8 +60,11 @@ export abstract class SyncEngineBackend<
 	 */
 	protected checkFetch?: (request: Request) => Response | undefined
 
+	private db: DrizzleSqliteDODatabase<Record<string, unknown>>
+
 	constructor(ctx: DurableObjectState, env: object) {
 		super(ctx, env)
+		this.db = drizzle(ctx.storage, { logger: false })
 
 		// This allows us to respond to client pings.
 		if (!this.ctx.getWebSocketAutoResponse())
@@ -64,6 +72,8 @@ export abstract class SyncEngineBackend<
 				request: '?',
 				response: '!'
 			})
+
+		ctx.blockConcurrencyWhile(() => migrate(this.db, this.engineDef.db.schema))
 	}
 
 	override async fetch(request: Request) {

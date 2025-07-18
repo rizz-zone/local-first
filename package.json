@@ -34,6 +34,6 @@
   "type": "module",
   "workspaces": ["basic/*", "adapters/*", "sample_integrations/*/*"],
   "dependencies": {
-    
+    "drizzle-orm": "^0.44.3"
   }
 }
