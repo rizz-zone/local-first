@@ -3,9 +3,6 @@
   "workspaces": {
     "": {
       "name": "local-first",
-      "dependencies": {
-        "semver": "^7.7.2",
-      },
       "devDependencies": {
         "@eslint/compat": "^1.3.1",
         "@eslint/js": "^9.30.1",
@@ -45,6 +42,7 @@
       "dependencies": {
         "@cloudflare/workers-types": "^4.20250712.0",
         "@ground0/shared": "workspace:*",
+        "semver": "^7.7.2",
         "superjson": "^2.2.2",
       },
       "devDependencies": {

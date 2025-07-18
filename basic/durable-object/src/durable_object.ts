@@ -14,11 +14,53 @@ export abstract class SyncEngineBackend<
 	T extends Transition
 > extends DurableObject {
 	protected abstract engineDef: SyncEngineDefinition<T>
-	private checkFetch?: (request: Request) => boolean
+	/**
+	 * A function to:
+	 *
+	 * 1. Check whether a request should be allowed, on the worker invoked by the request
+	 * 2. If the request should be allowed, provide the ID of the Durable Object instance that should be created or used.
+	 *
+	 * By default, `preCheckFetch` acts based off the `engine_name` query param. If it is not set, it returns `400 Bad Request`, and if it is, it returns the value of this param (which means that that the specific instance of the Durable Object used will have that ID).`
+	 *
+	 * @param request The request that comes into the Worker
+	 * @returns A string for the ID of the Durable Object instance if the request is allowed to continue, or a response if it is rejected
+	 */
+	protected static preCheckFetch: (request: Request) => string | Response = (
+		request
+	) => {
+		const engineName = new URL(request.url).searchParams.get('engine_name')
+		if (!engineName)
+			return new Response(
+				'Request does not contain engine_name param. Did you forget to override preCheckFetch? https://ground0.rizz.zone/something', // TODO: Fill this URL when the docs are made
+				{ status: 400 }
+			)
+		return engineName
+	}
+	/**
+	 * An optional function to check a request *on the Durable Object instance*. Generally, you should avoid this and override `preCheckFetch` instead, as this shortens response time for requests that fail as well as ensuring that you do not get billed for storage. However, you might need it if part of your criteria for whether a request should be rejected is based off something you store inside of the Durable Object's database.
+	 *
+	 * In most apps, you should only set this if `preCheckFetch` is already set, as `preCheckFetch` also decides on the ID of the Durable Object instance, and the default behaviour of always creating an instance with the same ID as the `engine_name` query parameter is usually undesirable.
+	 *
+	 * @returns A `Response` if the request should be blocked and not allowed to upgrade to a websocket, or `undefined` if the request can continue.
+	 */
+	protected checkFetch?: (request: Request) => Response | undefined
+
+	constructor(ctx: DurableObjectState, env: object) {
+		super(ctx, env)
+
+		// This allows us to respond to client pings.
+		if (!this.ctx.getWebSocketAutoResponse())
+			this.ctx.setWebSocketAutoResponse({
+				request: '?',
+				response: '!'
+			})
+	}
 
 	override async fetch(request: Request) {
-		if (this.checkFetch && !this.checkFetch(request))
-			return new Response('Unauthorized', { status: 401 })
+		if (this.checkFetch) {
+			const potentialResponse = this.checkFetch(request)
+			if (potentialResponse) return potentialResponse
+		}
 
 		// Create two ends of a WebSocket connection
 		const webSocketPair = new WebSocketPair()
