@@ -1,10 +1,6 @@
-import type { Transition, TransitionImpact } from './transitions/Transition'
-import type { TransitionSchema } from './transitions/TransitionSchema'
-
-type RequiredActionsForImpact<
-	T extends Transition,
-	RequiredImpact
-> = T extends { impact: RequiredImpact } ? T['action'] : never
+import type { Transition } from '../Transition'
+import type { TransitionSchema } from '../TransitionSchema'
+import type { SharedHandlers } from './sets/SharedHandlers'
 
 export type SyncEngineDefinition<T extends Transition> = {
 	version: {
@@ -23,10 +19,6 @@ export type SyncEngineDefinition<T extends Transition> = {
 		 * The transition schema for this sync enigne.
 		 */
 		schema: TransitionSchema<T>
-		sharedHandlers: {
-			[K in RequiredActionsForImpact<T, TransitionImpact.OptimisticPush>]: (
-				data: (T & { action: K })['data']
-			) => unknown
-		}
+		sharedHandlers: SharedHandlers<T>
 	}
 }
