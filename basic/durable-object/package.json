@@ -1,0 +1,34 @@
+{
+  "name": "@ground0/durable-object",
+  "module": "./dist/index.js",
+  "type": "module",
+  "version": "0.1.0",
+  "private": false,
+  "sideEffects": false,
+  "packageManager": "bun@1.2.18",
+  "devDependencies": {
+    "@cloudflare/vitest-pool-workers": "^0.8.55"
+  },
+  "peerDependencies": {
+    "typescript": "^5.8.3"
+  },
+  "scripts": {
+    "test": "vitest run --coverage",
+    "test:watch": "vitest watch --coverage",
+    "build": "tsdown",
+    "dev": "tsdown --watch --no-clean",
+    "check-types": "tsc"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": "./dist/index.js",
+    "./package.json": "./package.json"
+  },
+  "dependencies": {
+    "superjson": "^2.2.2",
+    "semver": "^7.7.2",
+    "@cloudflare/workers-types": "^4.20250712.0",
+    "@ground0/shared": "workspace:*"
+  }
+}
